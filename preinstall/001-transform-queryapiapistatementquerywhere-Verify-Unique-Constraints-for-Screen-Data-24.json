@@ -1,0 +1,20 @@
+{
+  "action": {
+    "transform": "$query({\"api\":$api,\"statement\":'query($where:' & $type & 'WhereInput!){data:' & $lowerFirst($type) & '(where:$where){total}}',\"variables\":{\"where\":{\"_or\":[$fields.{$:{\"_in\":[$lookup($$,$)]}}]}}}).data.total ? $throw(\"Could not verify unique fields for \" & $type & \" records.\")",
+    "bindings": {
+      "api": "application",
+      "type": "Screen",
+      "fields": [
+        "id",
+        "name"
+      ]
+    }
+  },
+  "payload": [
+    {
+      "id": "ckn7xl8hi007s0j3941kh2k50",
+      "name": "Integrated Carrier Shipment (Extension)"
+    }
+  ],
+  "description": "Verify Unique Constraints for Screen Data (2/4)"
+}

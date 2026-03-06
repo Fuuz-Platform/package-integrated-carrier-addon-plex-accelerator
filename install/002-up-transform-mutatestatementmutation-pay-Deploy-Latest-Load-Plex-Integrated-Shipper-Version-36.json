@@ -1,0 +1,19 @@
+{
+  "action": {
+    "up": {
+      "transform": "$mutate({\"statement\":'mutation ($payload:[DeployDataFlowVersionPayloadInput!]!){deployDataFlowVersion(payload:$payload){id}}', \"variables\":{\"payload\":[$.{\"dataFlowVersionId\":id}]}})",
+      "bindings": {}
+    },
+    "down": {
+      "transform": "$",
+      "bindings": {}
+    }
+  },
+  "payload": [
+    {
+      "id": "cknj33l6y001i0i802zxyc05k",
+      "dataFlowId": "loadPlexIntegratedShipper"
+    }
+  ],
+  "description": "Deploy Latest Load Plex Integrated Shipper Version (3/6)"
+}

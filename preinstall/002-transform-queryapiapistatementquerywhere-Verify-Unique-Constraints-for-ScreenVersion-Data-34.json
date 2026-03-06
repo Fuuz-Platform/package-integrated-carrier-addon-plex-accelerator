@@ -1,0 +1,18 @@
+{
+  "action": {
+    "transform": "$query({\"api\":$api,\"statement\":'query($where:' & $type & 'WhereInput!){data:' & $lowerFirst($type) & '(where:$where){total}}',\"variables\":{\"where\":{\"_or\":[$fields.{$:{\"_in\":[$lookup($$,$)]}}]}}}).data.total ? $throw(\"Could not verify unique fields for \" & $type & \" records.\")",
+    "bindings": {
+      "api": "application",
+      "type": "ScreenVersion",
+      "fields": [
+        "id"
+      ]
+    }
+  },
+  "payload": [
+    {
+      "id": "cknjdwds900480j8r7nw3gwms"
+    }
+  ],
+  "description": "Verify Unique Constraints for ScreenVersion Data (3/4)"
+}

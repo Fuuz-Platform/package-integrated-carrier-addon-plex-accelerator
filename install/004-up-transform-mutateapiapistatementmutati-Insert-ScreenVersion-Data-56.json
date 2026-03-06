@@ -1,0 +1,876 @@
+{
+  "action": {
+    "up": {
+      "transform": "$mutate({\"api\":$api,\"statement\":'mutation($payload:[' & $type & 'CreatePayloadInput!]!){data:create' & $type & '(payload:$payload){id}}',\"variables\":{\"payload\":[$.{\"create\":$}]}}).data.id",
+      "bindings": {
+        "api": "application",
+        "type": "ScreenVersion"
+      }
+    },
+    "down": {
+      "transform": "$mutate({\"api\":$api,\"statement\":'mutation($payload:[' & $type & 'DeletePayloadInput!]!){delete' & $type & '(payload:$payload){id}}',\"variables\":{\"payload\":[$.{\"where\":{\"id\":id}}]}})",
+      "bindings": {
+        "api": "application",
+        "type": "ScreenVersion"
+      }
+    }
+  },
+  "payload": [
+    {
+      "id": "cknjdwds900480j8r7nw3gwms",
+      "number": "0.0.9",
+      "description": "",
+      "screenId": "ckn7xl8hi007s0j3941kh2k50",
+      "design": {
+        "components": [
+          {
+            "type": "form",
+            "name": "IntegratedCarrierShipmentDetailForm",
+            "tabTitle": "Details",
+            "props": {
+              "actions": [
+                {
+                  "title": "Ship",
+                  "icon": {
+                    "icon": "truck",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "green",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $not($isNilOrEmpty(data.trackingNumber)) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "buttonColor": "green",
+                      "submitIcon": {
+                        "icon": "truck",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Ship Integrated Carrier Shipment \" & data.number & \"?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'createShipment', 'sandbox': true }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Integrated Carrier Shipment \" & data.mutation.number & \" shipped successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                },
+                {
+                  "title": "Void",
+                  "icon": {
+                    "icon": "undo",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "error",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $isNilOrEmpty(data.trackingNumber) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "buttonColor": "error",
+                      "submitIcon": {
+                        "icon": "undo",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Void Integrated Carrier Shipment \" & data.trackingNumber & \"?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'voidShipment', 'sandbox': true }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Integrated Carrier Shipment \" & data.mutation.number & \" voided successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                },
+                {
+                  "title": "Print Labels",
+                  "icon": {
+                    "icon": "print",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "secondary",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $isNilOrEmpty(data.trackingNumber) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "submitIcon": {
+                        "icon": "print",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Print \" & $count(data.packageLabels) & \" labels?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'printLabels' }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Labels printed successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                }
+              ],
+              "sections": [
+                {
+                  "formInputs": [
+                    {
+                      "name": "number",
+                      "description": "",
+                      "label": "Shipment Number",
+                      "type": "display",
+                      "dataPath": "number",
+                      "query": {
+                        "fields": [
+                          "number"
+                        ]
+                      }
+                    },
+                    {
+                      "name": "carrier",
+                      "description": "",
+                      "label": "Carrier",
+                      "type": "display",
+                      "dataPath": "integratedCarrier.name",
+                      "query": {
+                        "fields": [
+                          "integratedCarrier.name"
+                        ]
+                      }
+                    },
+                    {
+                      "name": "trackingNumber",
+                      "description": "",
+                      "label": "Tracking Number",
+                      "type": "display",
+                      "dataPath": "trackingNumber",
+                      "query": {
+                        "fields": [
+                          "trackingNumber"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "updateAction": {
+                "api": "Application",
+                "transforms": {
+                  "pre": "{\n                \"payload\": {\n                  \"where\": {\n                    \"id\": initialData.id\n                  },\n                  \"update\": data\n                }\n              }"
+                },
+                "mutation": "mutation UpdateIntegratedCarrierShipment($payload: [IntegratedCarrierShipmentUpdatePayloadInput!]!) {\n          mutation: updateIntegratedCarrierShipment(payload: $payload) {\n            id\n            number\n          }\n        }"
+              },
+              "query": {
+                "dataTransform": {
+                  "transform": "{ 'edges': [{ 'node': $executeFlow('loadPlexIntegratedShipper', { 'PCN': $metadata.urlParameters.PCN, 'Shipper_Key': $metadata.urlParameters.Shipper_Key }) }] }"
+                }
+              }
+            }
+          },
+          {
+            "type": "form",
+            "name": "IntegratedCarrierShipmentConfigurationForm",
+            "tabTitle": "Shipment Configuration",
+            "props": {
+              "actions": [
+                {
+                  "title": "Save",
+                  "icon": "save",
+                  "buttonColor": "primary",
+                  "disabled": {
+                    "__transform": "$not($isNilOrEmpty(data.trackingNumber)) or (form.submitSucceeded ? $not(form.dirtySinceLastSubmit) : $not(form.dirty))"
+                  },
+                  "action": {
+                    "navigation": {
+                      "submit": true
+                    }
+                  }
+                }
+              ],
+              "sections": [
+                {
+                  "formInputs": [
+                    {
+                      "name": "description",
+                      "description": "",
+                      "label": "Description",
+                      "type": "text",
+                      "dataPath": "description"
+                    },
+                    {
+                      "name": "integratedCarrier",
+                      "description": "",
+                      "label": "Carrier",
+                      "labelField": "name",
+                      "labelPath": "name",
+                      "additionalFields": "name",
+                      "type": "combobox",
+                      "dataPath": "integratedCarrier",
+                      "target": {
+                        "dataPath": "integratedCarrierId"
+                      },
+                      "api": "Application",
+                      "queryType": "IntegratedCarrier",
+                      "linkTarget": {
+                        "__transform": "\"/materialsManagement/logistics/integratedCarriers/\" & data.integratedCarrier.id"
+                      },
+                      "query": {
+                        "fields": [
+                          "integratedCarrier.id",
+                          "integratedCarrier.name"
+                        ]
+                      },
+                      "validation": {
+                        "required": false
+                      }
+                    },
+                    {
+                      "name": "integratedCarrierService",
+                      "description": "",
+                      "label": "Service",
+                      "labelField": "name",
+                      "labelPath": "name",
+                      "additionalFields": "name",
+                      "type": "combobox",
+                      "dataPath": "integratedCarrierService",
+                      "target": {
+                        "dataPath": "integratedCarrierServiceId"
+                      },
+                      "api": "Application",
+                      "queryType": "IntegratedCarrierService",
+                      "linkTarget": {
+                        "__transform": "\"/materialsManagement/logistics/integratedCarrierServices/\" & data.integratedCarrierService.id"
+                      },
+                      "additionalFilter": {
+                        "__transform": "{ 'integratedCarrierId': { '_eq': data.integratedCarrier.id } }",
+                        "__dynamicFields": {
+                          "payload": [
+                            "integratedCarrier"
+                          ]
+                        }
+                      },
+                      "autoFill": true,
+                      "autoClear": true,
+                      "query": {
+                        "fields": [
+                          "integratedCarrierService.id",
+                          "integratedCarrierService.name"
+                        ]
+                      },
+                      "validation": {
+                        "required": false
+                      }
+                    },
+                    {
+                      "name": "integratedCarrierBillToAccount",
+                      "description": "",
+                      "label": "Bill To Account",
+                      "labelField": "name",
+                      "labelPath": "name",
+                      "additionalFields": "name",
+                      "type": "combobox",
+                      "dataPath": "integratedCarrierBillToAccount",
+                      "target": {
+                        "dataPath": "integratedCarrierBillToAccountId"
+                      },
+                      "api": "Application",
+                      "queryType": "IntegratedCarrierAccount",
+                      "linkTarget": {
+                        "__transform": "\"/materialsManagement/logistics/integratedCarrierAccounts/\" & data.integratedCarrierBillToAccount.id"
+                      },
+                      "additionalFilter": {
+                        "__transform": "{ 'integratedCarrierId': { '_eq': data.integratedCarrier.id } }",
+                        "__dynamicFields": {
+                          "payload": [
+                            "integratedCarrier"
+                          ]
+                        }
+                      },
+                      "autoFill": true,
+                      "autoClear": true,
+                      "query": {
+                        "fields": [
+                          "integratedCarrierBillToAccount.id",
+                          "integratedCarrierBillToAccount.name"
+                        ]
+                      },
+                      "validation": {
+                        "required": false
+                      }
+                    },
+                    {
+                      "name": "integratedCarrierConnectionConfiguration",
+                      "description": "",
+                      "label": "Connection Configuration",
+                      "labelField": "name",
+                      "labelPath": "name",
+                      "additionalFields": "name",
+                      "type": "combobox",
+                      "dataPath": "integratedCarrierConnectionConfiguration",
+                      "target": {
+                        "dataPath": "integratedCarrierConnectionConfigurationId"
+                      },
+                      "api": "Application",
+                      "queryType": "IntegratedCarrierConnectionConfiguration",
+                      "linkTarget": {
+                        "__transform": "\"/materialsManagement/logistics/integratedCarrierConnectionConfigurations/\" & data.integratedCarrierConnectionConfiguration.id"
+                      },
+                      "additionalFilter": {
+                        "__transform": "{ 'integratedCarrierId': { '_eq': data.integratedCarrier.id } }",
+                        "__dynamicFields": {
+                          "payload": [
+                            "integratedCarrier"
+                          ]
+                        }
+                      },
+                      "autoFill": true,
+                      "autoClear": true,
+                      "query": {
+                        "fields": [
+                          "integratedCarrierConnectionConfiguration.id",
+                          "integratedCarrierConnectionConfiguration.name"
+                        ]
+                      },
+                      "validation": {
+                        "required": false
+                      }
+                    }
+                  ]
+                }
+              ],
+              "updateAction": {
+                "api": "Application",
+                "transforms": {
+                  "pre": "{\n                \"payload\": {\n                  \"where\": {\n                    \"id\": initialData.id\n                  },\n                  \"update\": data\n                }\n              }"
+                },
+                "mutation": "mutation UpdateIntegratedCarrierShipment($payload: [IntegratedCarrierShipmentUpdatePayloadInput!]!) {\n          mutation: updateIntegratedCarrierShipment(payload: $payload) {\n            id\n            number\n          }\n        }"
+              },
+              "query": {
+                "dataTransform": {
+                  "transform": "{ 'edges': [{ 'node': $executeFlow('loadPlexIntegratedShipper', { 'PCN': $metadata.urlParameters.PCN, 'Shipper_Key': $metadata.urlParameters.Shipper_Key }) }] }"
+                }
+              }
+            }
+          },
+          {
+            "type": "form",
+            "name": "IntegratedCarrierShipmentAddressForm",
+            "tabTitle": "Addresses",
+            "props": {
+              "actions": [
+                {
+                  "title": "Save",
+                  "icon": "save",
+                  "buttonColor": "primary",
+                  "disabled": {
+                    "__transform": "$not($isNilOrEmpty(data.trackingNumber)) or (form.submitSucceeded ? $not(form.dirtySinceLastSubmit) : $not(form.dirty))"
+                  },
+                  "action": {
+                    "navigation": {
+                      "submit": true
+                    }
+                  }
+                }
+              ],
+              "sections": [
+                {
+                  "formInputs": [
+                    {
+                      "name": "shipTo",
+                      "description": "",
+                      "label": "Ship To",
+                      "type": "json",
+                      "dataPath": "shipTo",
+                      "validation": {
+                        "required": false
+                      },
+                      "query": {
+                        "fields": [
+                          "shipTo"
+                        ]
+                      },
+                      "showSchemaFields": true,
+                      "showEditor": false,
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "title": "Name",
+                            "type": "string"
+                          },
+                          "phoneNumber": {
+                            "title": "Phone Number",
+                            "type": "string"
+                          },
+                          "residential": {
+                            "title": "Residential",
+                            "type": "boolean",
+                            "default": false
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "residential"
+                        ]
+                      }
+                    },
+                    {
+                      "name": "shipToAddress",
+                      "description": "",
+                      "label": "Ship To Address",
+                      "type": "address",
+                      "dataPath": "shipToAddress",
+                      "validation": {
+                        "required": false
+                      },
+                      "query": {
+                        "fields": [
+                          "shipToAddress.lines",
+                          "shipToAddress.city",
+                          "shipToAddress.state",
+                          "shipToAddress.country",
+                          "shipToAddress.postalCode"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "formInputs": [
+                    {
+                      "name": "shipFrom",
+                      "description": "",
+                      "label": "Ship From",
+                      "type": "json",
+                      "dataPath": "shipFrom",
+                      "validation": {
+                        "required": false
+                      },
+                      "query": {
+                        "fields": [
+                          "shipFrom"
+                        ]
+                      },
+                      "showSchemaFields": true,
+                      "showEditor": false,
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "title": "Name",
+                            "type": "string"
+                          },
+                          "phoneNumber": {
+                            "title": "Phone Number",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    },
+                    {
+                      "name": "shipFromAddress",
+                      "description": "",
+                      "label": "Ship From Address",
+                      "type": "address",
+                      "dataPath": "shipFromAddress",
+                      "validation": {
+                        "required": false
+                      },
+                      "query": {
+                        "fields": [
+                          "shipFromAddress.lines",
+                          "shipFromAddress.city",
+                          "shipFromAddress.state",
+                          "shipFromAddress.country",
+                          "shipFromAddress.postalCode"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "updateAction": {
+                "api": "Application",
+                "transforms": {
+                  "pre": "{\n                \"payload\": {\n                  \"where\": {\n                    \"id\": initialData.id\n                  },\n                  \"update\": data\n                }\n              }"
+                },
+                "mutation": "mutation UpdateIntegratedCarrierShipment($payload: [IntegratedCarrierShipmentUpdatePayloadInput!]!) {\n          mutation: updateIntegratedCarrierShipment(payload: $payload) {\n            id\n            number\n          }\n        }"
+              },
+              "query": {
+                "dataTransform": {
+                  "transform": "{ 'edges': [{ 'node': $executeFlow('loadPlexIntegratedShipper', { 'PCN': $metadata.urlParameters.PCN, 'Shipper_Key': $metadata.urlParameters.Shipper_Key }) }] }"
+                }
+              }
+            }
+          },
+          {
+            "type": "form",
+            "name": "IntegratedCarrierShipmentPackageForm",
+            "tabTitle": "Packages",
+            "props": {
+              "actions": [
+                {
+                  "title": "Save",
+                  "icon": "save",
+                  "buttonColor": "primary",
+                  "disabled": {
+                    "__transform": "$not($isNilOrEmpty(data.trackingNumber)) or (form.submitSucceeded ? $not(form.dirtySinceLastSubmit) : $not(form.dirty))"
+                  },
+                  "action": {
+                    "navigation": {
+                      "submit": true
+                    }
+                  }
+                }
+              ],
+              "sections": [
+                {
+                  "formInputs": [
+                    {
+                      "name": "packageDefinitions",
+                      "description": "",
+                      "label": "Package Definitions",
+                      "type": "fieldGroup",
+                      "dataPath": "packageDefinitions",
+                      "groupLabelDataPath": "referenceNumbers[0].value",
+                      "query": {
+                        "fields": [
+                          "packageDefinitions"
+                        ]
+                      },
+                      "fields": [
+                        {
+                          "name": "referenceNumbers",
+                          "description": "",
+                          "label": "Reference Numbers",
+                          "type": "fieldGroup",
+                          "dataPath": "referenceNumbers",
+                          "query": {
+                            "fields": [
+                              "referenceNumbers"
+                            ]
+                          },
+                          "groupLabelDataPath": "value",
+                          "initialCollapsed": true,
+                          "validation": {
+                            "maxItems": 2
+                          },
+                          "fields": [
+                            {
+                              "name": "type",
+                              "description": "",
+                              "label": "Type",
+                              "type": "text",
+                              "dataPath": "type"
+                            },
+                            {
+                              "name": "value",
+                              "description": "",
+                              "label": "Value",
+                              "type": "text",
+                              "dataPath": "value"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "weight",
+                          "description": "",
+                          "label": "Weight",
+                          "type": "measure",
+                          "unitType": "weight",
+                          "dataPath": "weight"
+                        },
+                        {
+                          "name": "dimensions.length",
+                          "description": "",
+                          "label": "Length",
+                          "type": "measure",
+                          "unitType": "length",
+                          "dataPath": "dimensions.length"
+                        },
+                        {
+                          "name": "dimensions.width",
+                          "description": "",
+                          "label": "Width",
+                          "type": "measure",
+                          "unitType": "length",
+                          "dataPath": "dimensions.width"
+                        },
+                        {
+                          "name": "dimensions.height",
+                          "description": "",
+                          "label": "Height",
+                          "type": "measure",
+                          "unitType": "length",
+                          "dataPath": "dimensions.height"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "updateAction": {
+                "api": "Application",
+                "transforms": {
+                  "pre": "{\n                \"payload\": {\n                  \"where\": {\n                    \"id\": initialData.id\n                  },\n                  \"update\": data\n                }\n              }"
+                },
+                "mutation": "mutation UpdateIntegratedCarrierShipment($payload: [IntegratedCarrierShipmentUpdatePayloadInput!]!) {\n          mutation: updateIntegratedCarrierShipment(payload: $payload) {\n            id\n            number\n          }\n        }"
+              },
+              "query": {
+                "dataTransform": {
+                  "transform": "{ 'edges': [{ 'node': $executeFlow('loadPlexIntegratedShipper', { 'PCN': $metadata.urlParameters.PCN, 'Shipper_Key': $metadata.urlParameters.Shipper_Key }) }] }"
+                }
+              }
+            }
+          },
+          {
+            "type": "form",
+            "name": "IntegratedCarrierShipmentTrackingForm",
+            "tabTitle": "Tracking and Labels",
+            "props": {
+              "actions": [
+                {
+                  "title": "Ship",
+                  "icon": {
+                    "icon": "truck",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "green",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $not($isNilOrEmpty(data.trackingNumber)) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "buttonColor": "green",
+                      "submitIcon": {
+                        "icon": "truck",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Ship Integrated Carrier Shipment \" & data.number & \"?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'createShipment', 'sandbox': true }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Integrated Carrier Shipment \" & data.mutation.number & \" shipped successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                },
+                {
+                  "title": "Void",
+                  "icon": {
+                    "icon": "undo",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "error",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $isNilOrEmpty(data.trackingNumber) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "buttonColor": "error",
+                      "submitIcon": {
+                        "icon": "undo",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Void Integrated Carrier Shipment \" & data.trackingNumber & \"?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'voidShipment', 'sandbox': true }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Integrated Carrier Shipment \" & data.mutation.number & \" voided successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                },
+                {
+                  "title": "Print Labels",
+                  "icon": {
+                    "icon": "print",
+                    "variant": "solid"
+                  },
+                  "buttonColor": "secondary",
+                  "disabled": {
+                    "__transform": "$isNilOrEmpty(data.id) or $isNilOrEmpty(data.trackingNumber) or (form.submitSucceeded ? form.dirtySinceLastSubmit : form.dirty)"
+                  },
+                  "action": [
+                    {
+                      "type": "confirmation",
+                      "submitIcon": {
+                        "icon": "print",
+                        "variant": "solid"
+                      },
+                      "message": {
+                        "__transform": "\"Print \" & $count(data.packageLabels) & \" labels?\""
+                      }
+                    },
+                    {
+                      "type": "flow",
+                      "transforms": {
+                        "pre": "{ 'integratedCarrierShipmentId': data.id, 'integratedCarrierRequestTypeId': 'printLabels' }"
+                      },
+                      "flowId": "integratedCarrierRouter",
+                      "message": {
+                        "__transform": "\"Labels printed successfully.\""
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "refresh": true
+                    }
+                  ]
+                }
+              ],
+              "sections": [
+                {
+                  "formInputs": [
+                    {
+                      "name": "trackingNumber",
+                      "description": "",
+                      "label": "Tracking Number",
+                      "type": "display",
+                      "dataPath": "trackingNumber",
+                      "query": {
+                        "fields": [
+                          "trackingNumber"
+                        ]
+                      },
+                      "disabled": true
+                    },
+                    {
+                      "name": "totalCharges",
+                      "description": "",
+                      "label": "Total Charges",
+                      "type": "display",
+                      "format": "measure",
+                      "dataPath": "totalCharges",
+                      "validation": {
+                        "required": false
+                      },
+                      "query": {
+                        "fields": [
+                          "totalCharges.value",
+                          "totalCharges.unit.code"
+                        ]
+                      },
+                      "disabled": true
+                    },
+                    {
+                      "name": "packageLabels",
+                      "description": "",
+                      "label": "Package Labels",
+                      "type": "fieldGroup",
+                      "dataPath": "packageLabels",
+                      "groupLabelDataPath": "trackingNumber",
+                      "disabled": true,
+                      "initialCollapsed": true,
+                      "fields": [
+                        {
+                          "name": "trackingNumber",
+                          "description": "",
+                          "label": "Tracking Number",
+                          "type": "display",
+                          "dataPath": "trackingNumber",
+                          "disabled": true
+                        },
+                        {
+                          "name": "label.format",
+                          "description": "",
+                          "label": "Label Format",
+                          "type": "display",
+                          "dataPath": "label.format",
+                          "disabled": true
+                        },
+                        {
+                          "name": "label.data",
+                          "description": "",
+                          "label": "Label Data",
+                          "type": "editor",
+                          "mode": "text",
+                          "dataPath": "label.data",
+                          "collapsible": true,
+                          "collapsedByDefault": true,
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "updateAction": {
+                "api": "Application",
+                "transforms": {
+                  "pre": "{\n                \"payload\": {\n                  \"where\": {\n                    \"id\": initialData.id\n                  },\n                  \"update\": data\n                }\n              }"
+                },
+                "mutation": "mutation UpdateIntegratedCarrierShipment($payload: [IntegratedCarrierShipmentUpdatePayloadInput!]!) {\n          mutation: updateIntegratedCarrierShipment(payload: $payload) {\n            id\n            number\n          }\n        }"
+              },
+              "query": {
+                "dataTransform": {
+                  "transform": "{ 'edges': [{ 'node': $executeFlow('loadPlexIntegratedShipper', { 'PCN': $metadata.urlParameters.PCN, 'Shipper_Key': $metadata.urlParameters.Shipper_Key }) }] }"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "description": "Insert ScreenVersion Data (5/6)"
+}

@@ -1,0 +1,27 @@
+{
+  "action": {
+    "up": {
+      "transform": "$mutate({\"api\":$api,\"statement\":'mutation($payload:[' & $type & 'CreatePayloadInput!]!){data:create' & $type & '(payload:$payload){id}}',\"variables\":{\"payload\":[$.{\"create\":$}]}}).data.id",
+      "bindings": {
+        "api": "application",
+        "type": "Screen"
+      }
+    },
+    "down": {
+      "transform": "$mutate({\"api\":$api,\"statement\":'mutation($payload:[' & $type & 'DeletePayloadInput!]!){delete' & $type & '(payload:$payload){id}}',\"variables\":{\"payload\":[$.{\"where\":{\"id\":id}}]}})",
+      "bindings": {
+        "api": "application",
+        "type": "Screen"
+      }
+    }
+  },
+  "payload": [
+    {
+      "id": "ckn7xl8hi007s0j3941kh2k50",
+      "name": "Integrated Carrier Shipment (Extension)",
+      "description": "Integrated carrier shipment screen designed for use in the MFGx Extension in Plex.",
+      "active": true
+    }
+  ],
+  "description": "Insert Screen Data (4/6)"
+}

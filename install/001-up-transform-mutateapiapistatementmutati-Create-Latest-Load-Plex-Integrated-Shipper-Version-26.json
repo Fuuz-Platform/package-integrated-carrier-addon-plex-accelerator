@@ -1,0 +1,2413 @@
+{
+  "action": {
+    "up": {
+      "transform": "$mutate({\"api\":$api,\"statement\":'mutation($payload:[' & $type & 'CreatePayloadInput!]!){data:create' & $type & '(payload:$payload){id}}',\"variables\":{\"payload\":[$.{\"create\":$}]}}).data.id",
+      "bindings": {
+        "api": "application",
+        "type": "DataFlowVersion"
+      }
+    },
+    "down": {
+      "transform": "$",
+      "bindings": {}
+    }
+  },
+  "payload": [
+    {
+      "id": "cknj33l6y001i0i802zxyc05k",
+      "number": "0.0.5",
+      "description": "",
+      "dataFlowId": "loadPlexIntegratedShipper",
+      "flow": {
+        "id": "cknj33l6y001i0i802zxyc05k",
+        "name": "Load Plex Integrated Shipper",
+        "type": "Integration",
+        "nodes": [
+          {
+            "id": "5cffbd46-f945-4dff-a916-0b72458bcba3",
+            "name": "Request",
+            "type": "request",
+            "data": {
+              "nextNodes": [
+                "a5675214-9b65-4bcd-8338-913fb3ac09f0"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "edab4cf2-492f-4125-be14-e742c92047af",
+            "name": "Response",
+            "type": "response",
+            "data": {
+              "responseTransform": "$"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+            "name": "Query Request Count",
+            "type": "query",
+            "data": {
+              "api": "application",
+              "variablesTransform": "{\n  \"id\": $state.context.integratedCarrierShipmentId\n}",
+              "query": "query GetShipmentCount($id: String!) {\n  integratedCarrierShipment(where: { id: { _eq: $id } }, first: 1, orderBy: null) {\n    total\n  }\n}\n",
+              "nextNodes": [
+                "edce341d-7446-458b-89ed-40b3513b846b"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+            "name": "Set Context",
+            "type": "setContext",
+            "data": {
+              "nextNodes": [
+                "83aa31c8-1286-45e8-89b9-10f45475a0fa"
+              ],
+              "transform": "(\n  $isNilOrEmpty(Shipper_Key)\n    ? $throw(\"Shipper_Key must be provided as a parameter to the flow\");\n\n  {\n    \"parameters\": $,\n    \"integratedCarrierShipmentId\": \"plex-\" & Shipper_Key\n  }\n)"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "edce341d-7446-458b-89ed-40b3513b846b",
+            "name": "If Not Exists",
+            "type": "ifElse",
+            "data": {
+              "transform": "integratedCarrierShipment.total = 0",
+              "onTrueNextNodes": [
+                "ea2be139-a11f-43c1-85c2-6129ed17145e"
+              ],
+              "onFalseNextNodes": [
+                "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+            "name": "Create Integrated Shipment",
+            "type": "mutate",
+            "data": {
+              "api": "Application",
+              "variablesTransform": "{\n  \"create\": $\n    ~> | $ | {\n      \"id\": $state.context.integratedCarrierShipmentId\n    } |\n}",
+              "mutation": "mutation CreateIntegratedShipment($create: IntegratedCarrierShipmentCreateInput!) {\n  createIntegratedCarrierShipment(payload: { create: $create }) {\n    id\n  }\n}",
+              "nextNodes": [
+                "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": true
+            }
+          },
+          {
+            "id": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+            "name": "Merge Standard Defaults",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "d744bd05-bed7-4cda-90a3-1df49f4bb4d6"
+              ],
+              "transform": "$merge([\n  {\n    \"number\": $state.context.shipperData.Packing_List.Shipper_No,\n    /* There's no way to directly link to a shipper form in Classic. */\n    \"externalReferenceUrl\": \"https://cloud.plex.com/Shipping/StandardShipping/ViewShipperForm?ShipperKey=\" & $state.context.parameters.Shipper_Key,\n    \"shipTo\": {\n      \"name\": $state.context.shipperData.Ship_To.Name,\n      \"phoneNumber\": $state.context.shipperData.Ship_To.Phone,\n      \"residential\": $state.context.shipperData.Ship_To.Residential\n    },\n    \"shipToAddress\": {\n      \"lines\": $split($state.context.shipperData.Ship_To.Address, \"\\n\"),\n      \"city\": $state.context.shipperData.Ship_To.City,\n      \"state\": $state.context.shipperData.Ship_To.State,\n      \"postalCode\": $state.context.shipperData.Ship_To.Zip,\n      \"country\": $state.context.shipperData.Ship_To.Country\n    },\n    \"shipFrom\": {\n      \"name\": $state.context.shipperData.Packing_List.Ship_From_Customer_Name,\n      \"phoneNumber\": $state.context.shipperData.Packing_List.Ship_From_Phone\n    },\n    \"shipFromAddress\": {\n      \"lines\": $split($state.context.shipperData.Packing_List.Ship_From_Address, \"\\n\"),\n      \"city\": $state.context.shipperData.Packing_List.Ship_From_City,\n      \"state\": $state.context.shipperData.Packing_List.Ship_From_State,\n      \"postalCode\": $state.context.shipperData.Packing_List.Ship_From_Zip,\n      \"country\": $state.context.shipperData.Packing_List.Ship_From_Country\n    },\n    \"packageDefinitions\": [$state.context.shipperData.Packages.{\n      \"referenceNumbers\": [{\n        \"type\": \"purchaseOrderNumber\",\n        \"value\": $state.context.shipperData.Shipper.PO_No\n      }, {\n        \"type\": \"serialNumber\",\n        \"value\": Serial_No\n      }],\n      \"length\": Length != '0' ? {\n        \"value\": $number(Length),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"width\": Width != '0' ? {\n        \"value\": $number(Width),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"height\": Height != '0' ? {\n        \"value\": $number(Height),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"weight\": Weight != '0' ? {\n        \"value\": $number(Weight),\n        \"unit\": {\n          \"id\": \"pounds\",\n          \"label\": \"lbs\",\n          \"code\": \"lbs\"\n        }\n      }\n    }],\n    /* Theoretically driven by logic based on customer/address/etc. */\n    \"integratedCarrierId\": null,\n    \"integratedCarrierServiceId\": null,\n    \"integratedCarrierBillToAccountId\": null,\n    \"integratedCarrierConnectionConfigurationId\": null\n  },\n  $\n])\n"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+            "name": "Query Request",
+            "type": "query",
+            "data": {
+              "api": "application",
+              "variablesTransform": "{\n  \"id\": $state.context.integratedCarrierShipmentId\n}",
+              "query": "query GetShipmentInfo($id: String!) {\n  integratedCarrierShipment(where: { id: { _eq: $id } }, first: 1, orderBy: null) {\n    edges {\n      node {\n        id\n        number\n        description\n        shipTo\n        shipToAddress {\n          lines\n          city\n          state\n          postalCode\n          country\n        }\n        shipFrom\n        shipFromAddress {\n          lines\n          city\n          state\n          postalCode\n          country\n        }\n        packageDefinitions\n        trackingNumber\n        packageLabels\n        totalCharges {\n          value\n          unit {\n            id\n            code\n          }\n        }\n        integratedCarrierConnectionConfiguration {\n          id\n          name\n        }\n        integratedCarrierService {\n          id\n          name\n        }\n        integratedCarrierBillToAccount {\n          id\n          name\n        }\n        integratedCarrier {\n          id\n          name          \n        }\n      }\n    }\n  }\n}\n",
+              "nextNodes": [
+                "869cbea3-06bf-4946-a46c-35978988d263"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "869cbea3-06bf-4946-a46c-35978988d263",
+            "name": "Transform",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "edab4cf2-492f-4125-be14-e742c92047af"
+              ],
+              "transform": "integratedCarrierShipment.edges[0].node"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+            "name": "Fork",
+            "type": "fork",
+            "data": {
+              "branches": [
+                {
+                  "name": "Packing_List",
+                  "nextNodes": [
+                    "85691694-9de0-4a92-aba2-b16bc99e0833"
+                  ]
+                },
+                {
+                  "name": "Packages",
+                  "nextNodes": [
+                    "9ee1f67c-9884-4e2d-836d-9f814e2cd636"
+                  ]
+                },
+                {
+                  "name": "Shipper",
+                  "nextNodes": [
+                    "20ca1317-d73b-4f98-8b79-dfc0aaa15ade"
+                  ]
+                }
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+            "name": "Get Plex Connections",
+            "type": "query",
+            "data": {
+              "api": "application",
+              "variablesTransform": "{\n  \"pcn\": $state.context.parameters.PCN\n}",
+              "query": "query PlexConnection($pcn: JSON!) {\n  connection(where: { \n    \tconnectorId: { _in: [\n        \"464e9c3f-dd6c-47af-8078-cda1ff25e966\", \n        \"72974b11-897f-47bd-896d-133962ef7bbb\"\n      ] }\n    \t_or: [ \n        { options: { _eq: { path: \"PCN\", value: $pcn } } }, \n        { options: { _isNull: { path: \"PCN\", value: true } } } \n  \t  ]\n    \t_not: {\n        url: {\n          _contains: \"test\"\n        }\n      }\n  \t}) {\n    total\n    edges {\n      node {\n        id\n        name\n        connectorId\n      }\n    }\n  }\n}",
+              "nextNodes": [
+                "5722e468-8c14-4537-9bbc-f13565541496"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "5722e468-8c14-4537-9bbc-f13565541496",
+            "name": "Merge Connection",
+            "type": "mergeContext",
+            "data": {
+              "transform": "(\n  total > 1\n    ? $throw(\"Multiple valid Plex connections found; ensure connections have PCN configured and PCN is passed from extension\");\n  \n  total = 0\n    ? $throw(\"No valid Plex connection found\");\n    \n  {\n    \"connection\": connection.edges[0].node\n      ~> | $ | {\n        \"classic\": connectorId = \"464e9c3f-dd6c-47af-8078-cda1ff25e966\"\n      } |\n  }\n)",
+              "nextNodes": [
+                "0290d211-c36c-493f-a2d0-d7c9d39c4c72"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "85691694-9de0-4a92-aba2-b16bc99e0833",
+            "name": "Shipper_Packing_List_Get",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+              ],
+              "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 11586\n          : 14141,\n        \"datasourceName\": \"Shipper_Packing_List_Get\",\n        \"parameters\": {\n          \"Shipper_Key\": $state.context.parameters.Shipper_Key\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+            "name": "Integrated_Shipping_Packages_Get",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+              ],
+              "transform": "/* Datasource is not registered in UX! */\n$state.context.connection.classic\n  ? $integrate({\n      \"result\": {\n        \"connectionId\": $state.context.connection.id,\n        \"payload\": [\n          {\n            \"datasourceKey\": $state.context.connection.classic\n              ? 47190\n              : \"NOT REGISTERED\",\n            \"datasourceName\": \"sproc283025_Integrated_Shipping_Packages_Get\",\n            \"parameters\": {\n              \"Shipper_Key\": $state.context.parameters.Shipper_Key\n            }\n          }\n        ]\n      }\n    }).result.Rows\n  : []"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+            "name": "Combine",
+            "type": "combine",
+            "data": {
+              "executionTimeout": 10,
+              "payloadCombinationStrategy": "index",
+              "contextCombinationStrategy": "first",
+              "nextNodes": [
+                "9d9b7e17-2eb6-498f-aa83-68b66285e5cc"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "201c3a7c-900d-4571-a36d-e87565d3165c",
+            "name": "Default Rules",
+            "type": "switch",
+            "data": {
+              "branches": [
+                {
+                  "nextNodes": [
+                    "e4912db8-e667-40eb-ad53-a31e55cf525b"
+                  ],
+                  "name": "Example Default",
+                  "transform": "Ship_To.Name = \"Big Company\""
+                },
+                {
+                  "name": "Global Default",
+                  "nextNodes": [
+                    "95f15814-7cc7-44a2-9878-82b00e5a8abf"
+                  ],
+                  "transform": "true"
+                }
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+            "name": "Example Default",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "34af4e31-cc19-4e8e-bbbe-cb23a6760642"
+              ],
+              "transform": "{\n  \"integratedCarrierId\": \"ckmwk8fv600010i4sgvetax0g\", /* UPS */\n  \"integratedCarrierServiceId\": \"ckmxv51ra000s0j7j2o052mzz\", /* Ground */\n  \"integratedCarrierBillToAccountId\": \"ckmxu72l7003b0i7171sm2uz6\", /* Cumulus UPS */\n  \"integratedCarrierConnectionConfigurationId\": \"ckmxyiwta000q0i2zba479uqe\" /* Cumulus UPS */\n}"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+            "name": "Global Default",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "34af4e31-cc19-4e8e-bbbe-cb23a6760642"
+              ],
+              "transform": "{}"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+            "name": "Merge Context",
+            "type": "mergeContext",
+            "data": {
+              "transform": "{\n  \"shipperData\": $\n}",
+              "nextNodes": [
+                "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+            "name": "Address_Get",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945"
+              ],
+              "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 26104\n          : 28,\n        \"datasourceName\": \"Address_Get\",\n        \"parameters\": {\n          \"Customer_No\": $state.context.shipperData.Shipper.Customer_No,\n          \"Customer_Address_No\": $state.context.shipperData.Shipper.Customer_Address_No\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+            "name": "Shipper_Form_Get",
+            "type": "transform",
+            "data": {
+              "nextNodes": [
+                "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+              ],
+              "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 1092\n          : 2068,\n        \"datasourceName\": \"Shipper_Form_Get\",\n        \"parameters\": {\n          \"Shipper_Key\": $state.context.parameters.Shipper_Key\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+            "name": "Merge Context",
+            "type": "mergeContext",
+            "data": {
+              "transform": "{\n  \"shipperData\": {\n    \"Ship_To\": $\n  }\n}",
+              "nextNodes": [
+                "730480dd-b7b1-42ed-997f-d4fbfd7a55ae"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          },
+          {
+            "id": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+            "name": "Transform",
+            "type": "transform",
+            "data": {
+              "transform": "$state.context.shipperData",
+              "nextNodes": [
+                "201c3a7c-900d-4571-a36d-e87565d3165c"
+              ]
+            },
+            "debug": {
+              "breakpointEnabled": false
+            }
+          }
+        ],
+        "version": "0.0.5"
+      },
+      "diagram": {
+        "id": "cknj33l6y001i0i802zxyc05k",
+        "offsetX": -736.01,
+        "offsetY": 117.05,
+        "zoom": 81.67,
+        "gridSize": 5,
+        "layers": [
+          {
+            "id": "cc872768-c652-4767-b93b-dcf69658b341",
+            "type": "diagram-links",
+            "isSvg": true,
+            "transformed": true,
+            "models": {
+              "a770cbcd-f37c-4da2-8b8b-bfee3ab67067": {
+                "points": [
+                  {
+                    "id": "f39491af-fa99-47dd-b664-4140430455da",
+                    "type": "point",
+                    "x": 408,
+                    "y": 154
+                  },
+                  {
+                    "id": "7e2f9d47-f582-43e3-8f53-525b3ded7ee0",
+                    "type": "point",
+                    "x": 460,
+                    "y": 154.5
+                  }
+                ],
+                "id": "a770cbcd-f37c-4da2-8b8b-bfee3ab67067",
+                "type": "default",
+                "source": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                "sourcePort": "ckn56eo3t001a3a64hr12l38n",
+                "target": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+                "targetPort": "ckn56aohz000d3a64gapb5o7z",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "7a82a7b7-3e5f-46eb-a4a2-b350cc71ba70": {
+                "points": [
+                  {
+                    "id": "020c173e-4da3-4a7e-b2a0-1b5bd1ca9d03",
+                    "type": "point",
+                    "x": 203.98,
+                    "y": 89.5
+                  },
+                  {
+                    "id": "fbf25124-934f-494f-bfb8-d8a485e539e5",
+                    "type": "point",
+                    "x": 254,
+                    "y": 154
+                  }
+                ],
+                "id": "7a82a7b7-3e5f-46eb-a4a2-b350cc71ba70",
+                "type": "default",
+                "source": "570a1a4a-c1b8-4249-9200-befb2162fd59",
+                "sourcePort": "ckn56a6ke00053a64rbs5ood8",
+                "target": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                "targetPort": "ckn56eo3t00183a64n8vs8fy3",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "252a3354-9c2d-4cb1-8343-68ec93843ba7": {
+                "points": [
+                  {
+                    "id": "1e69162f-5cc0-478a-a262-b995deb5dff9",
+                    "type": "point",
+                    "x": 204,
+                    "y": 218.5
+                  },
+                  {
+                    "id": "425bd879-fafc-436c-bd9f-72e508a013e8",
+                    "type": "point",
+                    "x": 254,
+                    "y": 154
+                  }
+                ],
+                "id": "252a3354-9c2d-4cb1-8343-68ec93843ba7",
+                "type": "default",
+                "source": "5cffbd46-f945-4dff-a916-0b72458bcba3",
+                "sourcePort": "ckn56ahvo00073a64vj9iuwtx",
+                "target": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                "targetPort": "ckn56eo3t00183a64n8vs8fy3",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "6de2ee70-0ed9-4e97-a15a-31420bfce365": {
+                "points": [
+                  {
+                    "id": "1f4d2560-6ceb-4d16-b275-0304feca5709",
+                    "type": "point",
+                    "x": 618.91,
+                    "y": 154.5
+                  },
+                  {
+                    "id": "162c51d8-540d-4b3d-93e4-6577e03321b8",
+                    "type": "point",
+                    "x": 662,
+                    "y": 141.5
+                  }
+                ],
+                "id": "6de2ee70-0ed9-4e97-a15a-31420bfce365",
+                "type": "default",
+                "selected": false,
+                "source": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+                "sourcePort": "ckn56aohz000f3a64h07zwoym",
+                "target": "edce341d-7446-458b-89ed-40b3513b846b",
+                "targetPort": "ckn56hdj4001f3a6418crkv1t",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "2b54526c-477d-45ac-a9bd-26a7dc4327d1": {
+                "points": [
+                  {
+                    "id": "9fb946a2-01c8-4a45-9ff3-6cced0ff7462",
+                    "type": "point",
+                    "x": 424,
+                    "y": 629.5
+                  },
+                  {
+                    "id": "9438abb7-fa56-44d8-981f-e05b3b753b0a",
+                    "type": "point",
+                    "x": 495,
+                    "y": 629.5
+                  }
+                ],
+                "id": "2b54526c-477d-45ac-a9bd-26a7dc4327d1",
+                "type": "default",
+                "selected": false,
+                "source": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                "sourcePort": "ckn6k09uz00cj3a64xz8g7m5h",
+                "target": "869cbea3-06bf-4946-a46c-35978988d263",
+                "targetPort": "ckn6k0gh600cl3a64ziakp649",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "e563ac8a-3434-48f2-9143-ab21d273817e": {
+                "points": [
+                  {
+                    "id": "ca4d03fd-2b60-4050-bfbe-35d462cd765a",
+                    "type": "point",
+                    "x": 649,
+                    "y": 629.5
+                  },
+                  {
+                    "id": "6974a52b-4def-4870-8722-a070909c85ce",
+                    "type": "point",
+                    "x": 700,
+                    "y": 629.5
+                  }
+                ],
+                "id": "e563ac8a-3434-48f2-9143-ab21d273817e",
+                "type": "default",
+                "selected": false,
+                "source": "869cbea3-06bf-4946-a46c-35978988d263",
+                "sourcePort": "ckn6k0gh600cn3a64te8z5s7g",
+                "target": "edab4cf2-492f-4125-be14-e742c92047af",
+                "targetPort": "ckn56aiok00093a64neh8tral",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "f7c01306-69a1-445b-95b7-dc42aa623dd0": {
+                "points": [
+                  {
+                    "id": "b36cfc68-138d-4972-907f-fca02894ada8",
+                    "type": "point",
+                    "x": 2098.28,
+                    "y": 334.5
+                  },
+                  {
+                    "id": "8bfb9f27-b0d8-4ae1-a3cd-47f12a63fa39",
+                    "type": "point",
+                    "selected": false,
+                    "x": 2140,
+                    "y": 335
+                  },
+                  {
+                    "id": "39db729a-ff65-498a-8913-7d7b998a8df5",
+                    "type": "point",
+                    "selected": false,
+                    "x": 2140,
+                    "y": 515
+                  },
+                  {
+                    "id": "00542bba-8235-4cc6-bff6-d5aa06950ffe",
+                    "type": "point",
+                    "selected": false,
+                    "x": 250,
+                    "y": 525
+                  },
+                  {
+                    "id": "ca5ff744-c1ae-4f52-8d01-fef8a8a5da69",
+                    "type": "point",
+                    "selected": false,
+                    "x": 250,
+                    "y": 615
+                  },
+                  {
+                    "id": "95f84879-44be-4b20-ad52-02a3150a0df7",
+                    "type": "point",
+                    "x": 270,
+                    "y": 629.5
+                  }
+                ],
+                "id": "f7c01306-69a1-445b-95b7-dc42aa623dd0",
+                "type": "default",
+                "selected": false,
+                "source": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+                "sourcePort": "ckn6ipyjb00b93a64kbl3tuda",
+                "target": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                "targetPort": "ckn6k09uz00ch3a64b5xyq4ic",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "c9305290-09f5-4447-9651-c712e351deaf": {
+                "points": [
+                  {
+                    "id": "a22134bf-b5fa-4424-9eff-0322531b377f",
+                    "type": "point",
+                    "x": 815.98,
+                    "y": 166.5
+                  },
+                  {
+                    "id": "e298bae6-283d-4f05-aa01-14d109ad4caf",
+                    "type": "point",
+                    "selected": false,
+                    "x": 875,
+                    "y": 170
+                  },
+                  {
+                    "id": "62997997-f1ec-4b9e-9089-bfb30077f336",
+                    "type": "point",
+                    "selected": false,
+                    "x": 875,
+                    "y": 245
+                  },
+                  {
+                    "id": "22ec57e6-d122-4f27-88f7-05bd572014bd",
+                    "type": "point",
+                    "selected": false,
+                    "x": 225,
+                    "y": 255
+                  },
+                  {
+                    "id": "870b3b49-6ac7-4e79-9bab-a1fe1888a2fe",
+                    "type": "point",
+                    "selected": false,
+                    "x": 225,
+                    "y": 630
+                  },
+                  {
+                    "id": "92ce5165-7d74-4887-bc88-7d0640a103a2",
+                    "type": "point",
+                    "x": 270,
+                    "y": 629.5
+                  }
+                ],
+                "id": "c9305290-09f5-4447-9651-c712e351deaf",
+                "type": "default",
+                "selected": false,
+                "source": "edce341d-7446-458b-89ed-40b3513b846b",
+                "sourcePort": "ckn56hdj4001j3a648x1knb2e",
+                "target": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                "targetPort": "ckn6k09uz00ch3a64b5xyq4ic",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "2e70b731-ae2f-4554-8b4d-2df3b692a10a": {
+                "points": [
+                  {
+                    "id": "0f9b8c9f-b992-4868-a789-bdeabe9aa647",
+                    "type": "point",
+                    "x": 815.98,
+                    "y": 141.5
+                  },
+                  {
+                    "id": "740f72e8-552f-4c71-99a9-66a3699ede86",
+                    "type": "point",
+                    "x": 860,
+                    "y": 144.5
+                  }
+                ],
+                "id": "2e70b731-ae2f-4554-8b4d-2df3b692a10a",
+                "type": "default",
+                "selected": false,
+                "source": "edce341d-7446-458b-89ed-40b3513b846b",
+                "sourcePort": "ckn56hdj4001h3a64gsx4o7no",
+                "target": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+                "targetPort": "ckn7t91nd00h13a64etrc89eb",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "a57660ab-0140-4632-829c-b27c82e868b5": {
+                "points": [
+                  {
+                    "id": "298a64f9-f267-4585-ae0e-f4ddf57ccb69",
+                    "type": "point",
+                    "x": 1020.78,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "d3a1e3e2-ed8a-43ff-ad43-2e2c3e4cce13",
+                    "type": "point",
+                    "x": 1050,
+                    "y": 144.5
+                  }
+                ],
+                "id": "a57660ab-0140-4632-829c-b27c82e868b5",
+                "type": "default",
+                "selected": false,
+                "source": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+                "sourcePort": "ckn7t91ne00h33a64dz9i6s32",
+                "target": "5722e468-8c14-4537-9bbc-f13565541496",
+                "targetPort": "ckn7uknfu00hl3a64iks5m7op",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "c5797a5e-f84f-44e1-b6a5-4f89e74ee234": {
+                "points": [
+                  {
+                    "id": "d5490a3c-e3e3-49b9-88f5-cf3270ff2df7",
+                    "type": "point",
+                    "x": 1204,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "56ff5efc-64ab-4bd4-8521-f52772e7fa7a",
+                    "type": "point",
+                    "x": 1245,
+                    "y": 144.5
+                  }
+                ],
+                "id": "c5797a5e-f84f-44e1-b6a5-4f89e74ee234",
+                "type": "default",
+                "source": "5722e468-8c14-4537-9bbc-f13565541496",
+                "sourcePort": "ckn7uknfu00hn3a64gpk2m97v",
+                "target": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                "targetPort": "ckn7szkbp00gv3a64mu68rfws",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "ee7493fe-fdcb-4ca4-8b3c-052cf93dc296": {
+                "points": [
+                  {
+                    "id": "a213b197-a2e5-4aa9-bf39-44daf2c584cd",
+                    "type": "point",
+                    "x": 1432.59,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "f9c16572-8d6d-401c-ba9d-2ee107efdb87",
+                    "type": "point",
+                    "x": 1520,
+                    "y": 59.5
+                  }
+                ],
+                "id": "ee7493fe-fdcb-4ca4-8b3c-052cf93dc296",
+                "type": "default",
+                "selected": false,
+                "source": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                "sourcePort": "ckn7szsuc00gx3a6440f951mc",
+                "target": "85691694-9de0-4a92-aba2-b16bc99e0833",
+                "targetPort": "ckn7unjwa00ie3a644a2253mj",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "ea150676-6e72-44db-8e23-318f555cac63": {
+                "points": [
+                  {
+                    "id": "960c6b6e-e95f-45ac-95df-02024da84100",
+                    "type": "point",
+                    "x": 1432.59,
+                    "y": 169.5
+                  },
+                  {
+                    "id": "c12d9157-e74c-46bb-836a-3a7b9eab2c51",
+                    "type": "point",
+                    "x": 1520,
+                    "y": 129.5
+                  }
+                ],
+                "id": "ea150676-6e72-44db-8e23-318f555cac63",
+                "type": "default",
+                "selected": false,
+                "source": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                "sourcePort": "ckn7szzhe00gz3a64ecmspt52",
+                "target": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+                "targetPort": "ckn7uqu9000j83a64r8s7fujw",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "a4bbdfb1-af92-466c-9d45-2e8547b0e502": {
+                "points": [
+                  {
+                    "id": "1c401443-00bb-4dde-9952-8015c2f71d31",
+                    "type": "point",
+                    "x": 1755.66,
+                    "y": 129.5
+                  },
+                  {
+                    "id": "96e203fa-4b57-4726-a663-47e8cacbd57b",
+                    "type": "point",
+                    "x": 1805,
+                    "y": 144.5
+                  }
+                ],
+                "id": "a4bbdfb1-af92-466c-9d45-2e8547b0e502",
+                "type": "default",
+                "selected": false,
+                "source": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+                "sourcePort": "ckn7uqu9000ja3a64ve7w4uye",
+                "target": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                "targetPort": "ckn7uvytp00jd3a64p6vk1jjf",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "26bbdbe8-5310-425c-9282-fa2778669534": {
+                "points": [
+                  {
+                    "id": "a8573d58-bab0-4344-a7ed-8f6b6f321347",
+                    "type": "point",
+                    "x": 1704.44,
+                    "y": 59.5
+                  },
+                  {
+                    "id": "73541435-63f8-4a85-a10e-a9e641e2b035",
+                    "type": "point",
+                    "x": 1805,
+                    "y": 144.5
+                  }
+                ],
+                "id": "26bbdbe8-5310-425c-9282-fa2778669534",
+                "type": "default",
+                "selected": false,
+                "source": "85691694-9de0-4a92-aba2-b16bc99e0833",
+                "sourcePort": "ckn7unjwa00ig3a64daiyb82h",
+                "target": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                "targetPort": "ckn7uvytp00jd3a64p6vk1jjf",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "5b56d913-6e4b-47ce-8942-3239aa065808": {
+                "points": [
+                  {
+                    "id": "54ade5ec-1dfc-4311-886e-26d73f4a45fd",
+                    "type": "point",
+                    "x": 1654,
+                    "y": 304.5
+                  },
+                  {
+                    "id": "3ae49fc1-1b2b-420a-9eec-efee27a0d5ba",
+                    "type": "point",
+                    "x": 1690,
+                    "y": 334.5
+                  }
+                ],
+                "id": "5b56d913-6e4b-47ce-8942-3239aa065808",
+                "type": "default",
+                "selected": false,
+                "source": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+                "sourcePort": "ckn7vg4so00jp3a64eeowmin1",
+                "target": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                "targetPort": "ckn6jyaa200c53a64cto3pkyr",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "73f633a1-2c56-4b2d-b57f-e49041ea0d56": {
+                "points": [
+                  {
+                    "id": "ce8ddfc8-2eef-4be7-a034-27058158c27e",
+                    "type": "point",
+                    "x": 1459,
+                    "y": 334.5
+                  },
+                  {
+                    "id": "e7662c00-75e2-413a-a76c-73d102b2881a",
+                    "type": "point",
+                    "x": 1500,
+                    "y": 304.5
+                  }
+                ],
+                "id": "73f633a1-2c56-4b2d-b57f-e49041ea0d56",
+                "type": "default",
+                "selected": false,
+                "source": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                "sourcePort": "ckn7uzigu00jl3a64d3tmedra",
+                "target": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+                "targetPort": "ckn7vg4so00jn3a64eozr6rsx",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "051c7ab6-abf3-4fff-ad5a-b0aa96bb67eb": {
+                "points": [
+                  {
+                    "id": "c207bd6f-9b74-445a-979d-c5060e3318d6",
+                    "type": "point",
+                    "x": 1459,
+                    "y": 359.5
+                  },
+                  {
+                    "id": "2710f56c-80b0-4433-a89b-3fee668cc83b",
+                    "type": "point",
+                    "x": 1500,
+                    "y": 399.5
+                  }
+                ],
+                "id": "051c7ab6-abf3-4fff-ad5a-b0aa96bb67eb",
+                "type": "default",
+                "source": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                "sourcePort": "ckn7uyyp300jj3a64r16y9sc4",
+                "target": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+                "targetPort": "ckn7vgygq00483a64amhtqulp",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "d20035ce-aa09-4e40-9404-83c454be052a": {
+                "points": [
+                  {
+                    "id": "f6cf8881-bc46-44fc-ac90-4e4a35246a07",
+                    "type": "point",
+                    "x": 1654,
+                    "y": 399.5
+                  },
+                  {
+                    "id": "5722047e-bff9-4dd5-ac11-35e7f43b5c9d",
+                    "type": "point",
+                    "x": 1690,
+                    "y": 334.5
+                  }
+                ],
+                "id": "d20035ce-aa09-4e40-9404-83c454be052a",
+                "type": "default",
+                "source": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+                "sourcePort": "ckn7vgygq004a3a64mbm3byxn",
+                "target": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                "targetPort": "ckn6jyaa200c53a64cto3pkyr",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "072eedef-be08-4977-8f7e-54659564903c": {
+                "points": [
+                  {
+                    "id": "e86d9f0a-88ec-4e83-941c-60c6dc28cbfd",
+                    "type": "point",
+                    "x": 1959,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "1f393dd0-be0b-426e-a9ee-53c3d07e00c3",
+                    "type": "point",
+                    "x": 2005,
+                    "y": 144.5
+                  }
+                ],
+                "id": "072eedef-be08-4977-8f7e-54659564903c",
+                "type": "default",
+                "source": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                "sourcePort": "ckn7uvytp00jf3a64j6ea9i1w",
+                "target": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+                "targetPort": "ckn7vij9j004s3a64nftl5unj",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "f0c95a0b-8d77-4ed3-b172-6efc1cc4d8cd": {
+                "points": [
+                  {
+                    "id": "b817d51d-0117-4f1e-adb6-8227d97b78b0",
+                    "type": "point",
+                    "x": 1869.53,
+                    "y": 334.5
+                  },
+                  {
+                    "id": "a11d64a4-dafd-40b9-9814-d05d31cb31c4",
+                    "type": "point",
+                    "x": 1905,
+                    "y": 334.5
+                  }
+                ],
+                "id": "f0c95a0b-8d77-4ed3-b172-6efc1cc4d8cd",
+                "type": "default",
+                "selected": false,
+                "source": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                "sourcePort": "ckn6jyaa200c73a640ue8g1fj",
+                "target": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+                "targetPort": "ckn6ipyjb00b73a64lvl3fdd6",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "0b990d13-5417-4239-aa5b-6e0a7899eb67": {
+                "points": [
+                  {
+                    "id": "946bc480-e9e9-4aad-b123-6671149653a1",
+                    "type": "point",
+                    "x": 1432.59,
+                    "y": 194.5
+                  },
+                  {
+                    "id": "a31ec4f1-9f37-4bad-9567-2539874a9574",
+                    "type": "point",
+                    "x": 1520,
+                    "y": 194.5
+                  }
+                ],
+                "id": "0b990d13-5417-4239-aa5b-6e0a7899eb67",
+                "type": "default",
+                "selected": false,
+                "source": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                "sourcePort": "cknj8y66i004w3b64kn2s3qeo",
+                "target": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+                "targetPort": "cknj8wf39025l3b6431g67rjo",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "03b388d3-99bf-4596-80b8-04551a22bd86": {
+                "points": [
+                  {
+                    "id": "5c6c2396-c567-4245-9705-da626150d13d",
+                    "type": "point",
+                    "x": 1674,
+                    "y": 194.5
+                  },
+                  {
+                    "id": "0c34547f-e41e-4aed-bbbf-2879f10359cf",
+                    "type": "point",
+                    "x": 1805,
+                    "y": 144.5
+                  }
+                ],
+                "id": "03b388d3-99bf-4596-80b8-04551a22bd86",
+                "type": "default",
+                "selected": false,
+                "source": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+                "sourcePort": "cknj8wf39025n3b647lq6pwyv",
+                "target": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                "targetPort": "ckn7uvytp00jd3a64p6vk1jjf",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "9f6a4078-ade6-4f0a-8826-da6ce397b985": {
+                "points": [
+                  {
+                    "id": "f2d5a789-c475-48cc-8a95-a2108c4b1c34",
+                    "type": "point",
+                    "x": 2159,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "1ad85fa7-b511-4585-b7f2-a3d5e1b6e29f",
+                    "type": "point",
+                    "x": 2210,
+                    "y": 144.5
+                  }
+                ],
+                "id": "9f6a4078-ade6-4f0a-8826-da6ce397b985",
+                "type": "default",
+                "source": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+                "sourcePort": "ckn7vij9j004u3a64ixrapw6c",
+                "target": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+                "targetPort": "cknj8umok02593b644cjfwdz8",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "3e927289-1d95-4216-9070-5678d3fecbb5": {
+                "points": [
+                  {
+                    "id": "1f372c28-ffad-4b27-bf0a-1befbc9ab1c5",
+                    "type": "point",
+                    "x": 2364,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "ad0d899e-82bc-40e2-805d-db54af52e971",
+                    "type": "point",
+                    "x": 2410,
+                    "y": 144.5
+                  }
+                ],
+                "id": "3e927289-1d95-4216-9070-5678d3fecbb5",
+                "type": "default",
+                "source": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+                "sourcePort": "cknj8umok025b3b642riscblu",
+                "target": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+                "targetPort": "cknj8z73q00563b64u6l0my44",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "d7bc86a3-2b06-4434-8a1d-ef9d0bee21f2": {
+                "points": [
+                  {
+                    "id": "15e8e946-f51f-48e5-bc22-6f6c53a2847e",
+                    "type": "point",
+                    "x": 1305,
+                    "y": 334.5
+                  },
+                  {
+                    "id": "3ce49e50-f7e6-4b3e-8348-6febe5595a8c",
+                    "type": "point",
+                    "x": 1274,
+                    "y": 334.5
+                  }
+                ],
+                "id": "d7bc86a3-2b06-4434-8a1d-ef9d0bee21f2",
+                "type": "default",
+                "selected": false,
+                "source": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                "sourcePort": "ckn7uyr1y00jh3a64ithdrowr",
+                "target": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+                "targetPort": "cknj9ac9600763b64ex1zqml8",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              },
+              "2d390bca-9700-4f06-9b7f-cb6649e869d6": {
+                "points": [
+                  {
+                    "id": "bf0135d6-1f17-4885-9ba4-9cdb4e03f586",
+                    "type": "point",
+                    "x": 2564,
+                    "y": 144.5
+                  },
+                  {
+                    "id": "bd77a546-8dce-4508-a8a4-584db72768a5",
+                    "type": "point",
+                    "selected": false,
+                    "x": 2580,
+                    "y": 150
+                  },
+                  {
+                    "id": "a3b30b51-2b6b-41d0-81b9-3ea01c4e382a",
+                    "type": "point",
+                    "selected": false,
+                    "x": 2580,
+                    "y": 240
+                  },
+                  {
+                    "id": "966b10fe-d4d3-4b01-8a29-57ac61fac16f",
+                    "type": "point",
+                    "selected": false,
+                    "x": 1100,
+                    "y": 255
+                  },
+                  {
+                    "id": "c8f61668-6b4d-4d01-b617-71a65283e1bb",
+                    "type": "point",
+                    "selected": false,
+                    "x": 1100,
+                    "y": 335
+                  },
+                  {
+                    "id": "c19b4d72-129d-4b4a-a097-f666c4baf6e5",
+                    "type": "point",
+                    "x": 1120,
+                    "y": 334.5
+                  }
+                ],
+                "id": "2d390bca-9700-4f06-9b7f-cb6649e869d6",
+                "type": "default",
+                "selected": false,
+                "source": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+                "sourcePort": "cknj8z73r00583b642xmczn98",
+                "target": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+                "targetPort": "cknj9ac9500743b64chnusyo0",
+                "labels": [],
+                "width": 3,
+                "curvyness": 50
+              }
+            }
+          },
+          {
+            "id": "175a3838-ea70-4530-998d-aebf49cd633d",
+            "type": "diagram-nodes",
+            "isSvg": false,
+            "transformed": true,
+            "models": {
+              "570a1a4a-c1b8-4249-9200-befb2162fd59": {
+                "id": "570a1a4a-c1b8-4249-9200-befb2162fd59",
+                "type": "debugSource",
+                "selected": false,
+                "x": 50,
+                "y": 50,
+                "ports": [
+                  {
+                    "id": "ckn56a6ke00053a64rbs5ood8",
+                    "type": "default",
+                    "x": 195.98,
+                    "y": 81.5,
+                    "name": "ckn56a6ke00063a64akrb600m",
+                    "parentNode": "570a1a4a-c1b8-4249-9200-befb2162fd59",
+                    "links": [
+                      "7a82a7b7-3e5f-46eb-a4a2-b350cc71ba70"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "payload": {
+                    "PCN": "283025",
+                    "Shipper_Key": "7711022"
+                  },
+                  "nextNodes": [
+                    "a5675214-9b65-4bcd-8338-913fb3ac09f0"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Source"
+              },
+              "5cffbd46-f945-4dff-a916-0b72458bcba3": {
+                "id": "5cffbd46-f945-4dff-a916-0b72458bcba3",
+                "type": "request",
+                "selected": false,
+                "x": 50,
+                "y": 179,
+                "ports": [
+                  {
+                    "id": "ckn56ahvo00073a64vj9iuwtx",
+                    "type": "default",
+                    "x": 196,
+                    "y": 210.5,
+                    "name": "ckn56ahvo00083a64tfk0eb71",
+                    "parentNode": "5cffbd46-f945-4dff-a916-0b72458bcba3",
+                    "links": [
+                      "252a3354-9c2d-4cb1-8343-68ec93843ba7"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Payload",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "a5675214-9b65-4bcd-8338-913fb3ac09f0"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Request"
+              },
+              "edab4cf2-492f-4125-be14-e742c92047af": {
+                "id": "edab4cf2-492f-4125-be14-e742c92047af",
+                "type": "response",
+                "selected": false,
+                "x": 700,
+                "y": 590,
+                "ports": [
+                  {
+                    "id": "ckn56aiok00093a64neh8tral",
+                    "type": "default",
+                    "x": 692,
+                    "y": 621.5,
+                    "name": "ckn56aiok000a3a64niganqsq",
+                    "parentNode": "edab4cf2-492f-4125-be14-e742c92047af",
+                    "links": [
+                      "e563ac8a-3434-48f2-9143-ab21d273817e"
+                    ],
+                    "in": true,
+                    "fieldLabel": "Response"
+                  },
+                  {
+                    "id": "ckn56aiok000b3a64f8zjf2m8",
+                    "type": "default",
+                    "x": 845.98,
+                    "y": 621.5,
+                    "name": "ckn56aiok000c3a64zsjh50fc",
+                    "parentNode": "edab4cf2-492f-4125-be14-e742c92047af",
+                    "links": [],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "responseTransform": "$"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Response"
+              },
+              "83aa31c8-1286-45e8-89b9-10f45475a0fa": {
+                "id": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+                "type": "query",
+                "selected": false,
+                "x": 460,
+                "y": 115,
+                "ports": [
+                  {
+                    "id": "ckn56aohz000d3a64gapb5o7z",
+                    "type": "default",
+                    "x": 452,
+                    "y": 146.5,
+                    "name": "ckn56aohz000e3a64sh02g951",
+                    "parentNode": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+                    "links": [
+                      "a770cbcd-f37c-4da2-8b8b-bfee3ab67067"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn56aohz000f3a64h07zwoym",
+                    "type": "default",
+                    "x": 610.91,
+                    "y": 146.5,
+                    "name": "ckn56aohz000g3a64mzugpzua",
+                    "parentNode": "83aa31c8-1286-45e8-89b9-10f45475a0fa",
+                    "links": [
+                      "6de2ee70-0ed9-4e97-a15a-31420bfce365"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "api": "application",
+                  "variablesTransform": "{\n  \"id\": $state.context.integratedCarrierShipmentId\n}",
+                  "query": "query GetShipmentCount($id: String!) {\n  integratedCarrierShipment(where: { id: { _eq: $id } }, first: 1, orderBy: null) {\n    total\n  }\n}\n",
+                  "nextNodes": [
+                    "edce341d-7446-458b-89ed-40b3513b846b"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Query Request Count"
+              },
+              "a5675214-9b65-4bcd-8338-913fb3ac09f0": {
+                "id": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                "type": "setContext",
+                "selected": false,
+                "x": 254,
+                "y": 114.5,
+                "ports": [
+                  {
+                    "id": "ckn56eo3t00183a64n8vs8fy3",
+                    "type": "default",
+                    "x": 246,
+                    "y": 146,
+                    "name": "ckn56eo3t00193a645rfw8w1u",
+                    "parentNode": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                    "links": [
+                      "7a82a7b7-3e5f-46eb-a4a2-b350cc71ba70",
+                      "252a3354-9c2d-4cb1-8343-68ec93843ba7"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn56eo3t001a3a64hr12l38n",
+                    "type": "default",
+                    "x": 400,
+                    "y": 146,
+                    "name": "ckn56eo3t001b3a64xznxncv7",
+                    "parentNode": "a5675214-9b65-4bcd-8338-913fb3ac09f0",
+                    "links": [
+                      "a770cbcd-f37c-4da2-8b8b-bfee3ab67067"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "83aa31c8-1286-45e8-89b9-10f45475a0fa"
+                  ],
+                  "transform": "(\n  $isNilOrEmpty(Shipper_Key)\n    ? $throw(\"Shipper_Key must be provided as a parameter to the flow\");\n\n  {\n    \"parameters\": $,\n    \"integratedCarrierShipmentId\": \"plex-\" & Shipper_Key\n  }\n)"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Set Context"
+              },
+              "edce341d-7446-458b-89ed-40b3513b846b": {
+                "id": "edce341d-7446-458b-89ed-40b3513b846b",
+                "type": "ifElse",
+                "selected": false,
+                "x": 662,
+                "y": 102,
+                "ports": [
+                  {
+                    "id": "ckn56hdj4001f3a6418crkv1t",
+                    "type": "default",
+                    "x": 654,
+                    "y": 133.5,
+                    "name": "ckn56hdj4001g3a64pqut0dgn",
+                    "parentNode": "edce341d-7446-458b-89ed-40b3513b846b",
+                    "links": [
+                      "6de2ee70-0ed9-4e97-a15a-31420bfce365"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn56hdj4001h3a64gsx4o7no",
+                    "type": "default",
+                    "x": 807.98,
+                    "y": 133.5,
+                    "name": "ckn56hdj4001i3a64ca7rfn3b",
+                    "parentNode": "edce341d-7446-458b-89ed-40b3513b846b",
+                    "links": [
+                      "2e70b731-ae2f-4554-8b4d-2df3b692a10a"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "True",
+                    "fieldPath": "data.onTrueNextNodes"
+                  },
+                  {
+                    "id": "ckn56hdj4001j3a648x1knb2e",
+                    "type": "default",
+                    "x": 807.98,
+                    "y": 158.5,
+                    "name": "ckn56hdj4001k3a64pm2bnru8",
+                    "parentNode": "edce341d-7446-458b-89ed-40b3513b846b",
+                    "links": [
+                      "c9305290-09f5-4447-9651-c712e351deaf"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "False",
+                    "fieldPath": "data.onFalseNextNodes"
+                  }
+                ],
+                "data": {
+                  "transform": "integratedCarrierShipment.total = 0",
+                  "onTrueNextNodes": [
+                    "ea2be139-a11f-43c1-85c2-6129ed17145e"
+                  ],
+                  "onFalseNextNodes": [
+                    "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "If Not Exists"
+              },
+              "d744bd05-bed7-4cda-90a3-1df49f4bb4d6": {
+                "id": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+                "type": "mutate",
+                "selected": false,
+                "x": 1905,
+                "y": 295,
+                "ports": [
+                  {
+                    "id": "ckn6ipyjb00b73a64lvl3fdd6",
+                    "type": "default",
+                    "x": 1897,
+                    "y": 326.5,
+                    "name": "ckn6ipyjb00b83a64slo51kze",
+                    "parentNode": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+                    "links": [
+                      "f0c95a0b-8d77-4ed3-b172-6efc1cc4d8cd"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn6ipyjb00b93a64kbl3tuda",
+                    "type": "default",
+                    "x": 2090.28,
+                    "y": 326.5,
+                    "name": "ckn6ipyjb00ba3a64yayeddvs",
+                    "parentNode": "d744bd05-bed7-4cda-90a3-1df49f4bb4d6",
+                    "links": [
+                      "f7c01306-69a1-445b-95b7-dc42aa623dd0"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "api": "Application",
+                  "variablesTransform": "{\n  \"create\": $\n    ~> | $ | {\n      \"id\": $state.context.integratedCarrierShipmentId\n    } |\n}",
+                  "mutation": "mutation CreateIntegratedShipment($create: IntegratedCarrierShipmentCreateInput!) {\n  createIntegratedCarrierShipment(payload: { create: $create }) {\n    id\n  }\n}",
+                  "nextNodes": [
+                    "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": true
+                },
+                "name": "Create Integrated Shipment"
+              },
+              "34af4e31-cc19-4e8e-bbbe-cb23a6760642": {
+                "id": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                "type": "transform",
+                "selected": true,
+                "x": 1690,
+                "y": 295,
+                "ports": [
+                  {
+                    "id": "ckn6jyaa200c53a64cto3pkyr",
+                    "type": "default",
+                    "x": 1682,
+                    "y": 326.5,
+                    "name": "ckn6jyaa200c63a64jgbrwhkb",
+                    "parentNode": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                    "links": [
+                      "5b56d913-6e4b-47ce-8942-3239aa065808",
+                      "d20035ce-aa09-4e40-9404-83c454be052a"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn6jyaa200c73a640ue8g1fj",
+                    "type": "default",
+                    "x": 1861.53,
+                    "y": 326.5,
+                    "name": "ckn6jyaa200c83a644h31ygmc",
+                    "parentNode": "34af4e31-cc19-4e8e-bbbe-cb23a6760642",
+                    "links": [
+                      "f0c95a0b-8d77-4ed3-b172-6efc1cc4d8cd"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "d744bd05-bed7-4cda-90a3-1df49f4bb4d6"
+                  ],
+                  "transform": "$merge([\n  {\n    \"number\": $state.context.shipperData.Packing_List.Shipper_No,\n    /* There's no way to directly link to a shipper form in Classic. */\n    \"externalReferenceUrl\": \"https://cloud.plex.com/Shipping/StandardShipping/ViewShipperForm?ShipperKey=\" & $state.context.parameters.Shipper_Key,\n    \"shipTo\": {\n      \"name\": $state.context.shipperData.Ship_To.Name,\n      \"phoneNumber\": $state.context.shipperData.Ship_To.Phone,\n      \"residential\": $state.context.shipperData.Ship_To.Residential\n    },\n    \"shipToAddress\": {\n      \"lines\": $split($state.context.shipperData.Ship_To.Address, \"\\n\"),\n      \"city\": $state.context.shipperData.Ship_To.City,\n      \"state\": $state.context.shipperData.Ship_To.State,\n      \"postalCode\": $state.context.shipperData.Ship_To.Zip,\n      \"country\": $state.context.shipperData.Ship_To.Country\n    },\n    \"shipFrom\": {\n      \"name\": $state.context.shipperData.Packing_List.Ship_From_Customer_Name,\n      \"phoneNumber\": $state.context.shipperData.Packing_List.Ship_From_Phone\n    },\n    \"shipFromAddress\": {\n      \"lines\": $split($state.context.shipperData.Packing_List.Ship_From_Address, \"\\n\"),\n      \"city\": $state.context.shipperData.Packing_List.Ship_From_City,\n      \"state\": $state.context.shipperData.Packing_List.Ship_From_State,\n      \"postalCode\": $state.context.shipperData.Packing_List.Ship_From_Zip,\n      \"country\": $state.context.shipperData.Packing_List.Ship_From_Country\n    },\n    \"packageDefinitions\": [$state.context.shipperData.Packages.{\n      \"referenceNumbers\": [{\n        \"type\": \"purchaseOrderNumber\",\n        \"value\": $state.context.shipperData.Shipper.PO_No\n      }, {\n        \"type\": \"serialNumber\",\n        \"value\": Serial_No\n      }],\n      \"length\": Length != '0' ? {\n        \"value\": $number(Length),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"width\": Width != '0' ? {\n        \"value\": $number(Width),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"height\": Height != '0' ? {\n        \"value\": $number(Height),\n        \"unit\": {\n          \"id\": \"inches\",\n          \"label\": \"in\",\n          \"code\": \"in\"\n        }\n      },\n      \"weight\": Weight != '0' ? {\n        \"value\": $number(Weight),\n        \"unit\": {\n          \"id\": \"pounds\",\n          \"label\": \"lbs\",\n          \"code\": \"lbs\"\n        }\n      }\n    }],\n    /* Theoretically driven by logic based on customer/address/etc. */\n    \"integratedCarrierId\": null,\n    \"integratedCarrierServiceId\": null,\n    \"integratedCarrierBillToAccountId\": null,\n    \"integratedCarrierConnectionConfigurationId\": null\n  },\n  $\n])\n"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Merge Standard Defaults"
+              },
+              "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746": {
+                "id": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                "type": "query",
+                "selected": false,
+                "x": 270,
+                "y": 590,
+                "ports": [
+                  {
+                    "id": "ckn6k09uz00ch3a64b5xyq4ic",
+                    "type": "default",
+                    "x": 262,
+                    "y": 621.5,
+                    "name": "ckn6k09uz00ci3a64rglklzua",
+                    "parentNode": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                    "links": [
+                      "f7c01306-69a1-445b-95b7-dc42aa623dd0",
+                      "c9305290-09f5-4447-9651-c712e351deaf"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn6k09uz00cj3a64xz8g7m5h",
+                    "type": "default",
+                    "x": 416,
+                    "y": 621.5,
+                    "name": "ckn6k09uz00ck3a64qplwxmnf",
+                    "parentNode": "eb3a7550-ccc4-46c9-9b0e-8d0b2c11a746",
+                    "links": [
+                      "2b54526c-477d-45ac-a9bd-26a7dc4327d1"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "api": "application",
+                  "variablesTransform": "{\n  \"id\": $state.context.integratedCarrierShipmentId\n}",
+                  "query": "query GetShipmentInfo($id: String!) {\n  integratedCarrierShipment(where: { id: { _eq: $id } }, first: 1, orderBy: null) {\n    edges {\n      node {\n        id\n        number\n        description\n        shipTo\n        shipToAddress {\n          lines\n          city\n          state\n          postalCode\n          country\n        }\n        shipFrom\n        shipFromAddress {\n          lines\n          city\n          state\n          postalCode\n          country\n        }\n        packageDefinitions\n        trackingNumber\n        packageLabels\n        totalCharges {\n          value\n          unit {\n            id\n            code\n          }\n        }\n        integratedCarrierConnectionConfiguration {\n          id\n          name\n        }\n        integratedCarrierService {\n          id\n          name\n        }\n        integratedCarrierBillToAccount {\n          id\n          name\n        }\n        integratedCarrier {\n          id\n          name          \n        }\n      }\n    }\n  }\n}\n",
+                  "nextNodes": [
+                    "869cbea3-06bf-4946-a46c-35978988d263"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Query Request"
+              },
+              "869cbea3-06bf-4946-a46c-35978988d263": {
+                "id": "869cbea3-06bf-4946-a46c-35978988d263",
+                "type": "transform",
+                "selected": false,
+                "x": 495,
+                "y": 590,
+                "ports": [
+                  {
+                    "id": "ckn6k0gh600cl3a64ziakp649",
+                    "type": "default",
+                    "x": 487,
+                    "y": 621.5,
+                    "name": "ckn6k0gh600cm3a64kyst63jv",
+                    "parentNode": "869cbea3-06bf-4946-a46c-35978988d263",
+                    "links": [
+                      "2b54526c-477d-45ac-a9bd-26a7dc4327d1"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn6k0gh600cn3a64te8z5s7g",
+                    "type": "default",
+                    "x": 641,
+                    "y": 621.5,
+                    "name": "ckn6k0gh600co3a64lx4vdocf",
+                    "parentNode": "869cbea3-06bf-4946-a46c-35978988d263",
+                    "links": [
+                      "e563ac8a-3434-48f2-9143-ab21d273817e"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "edab4cf2-492f-4125-be14-e742c92047af"
+                  ],
+                  "transform": "integratedCarrierShipment.edges[0].node"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Transform"
+              },
+              "0290d211-c36c-493f-a2d0-d7c9d39c4c72": {
+                "id": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                "type": "fork",
+                "selected": false,
+                "x": 1245,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "ckn7szkbp00gv3a64mu68rfws",
+                    "type": "default",
+                    "x": 1237,
+                    "y": 136.5,
+                    "name": "ckn7szkbp00gw3a64iz6i8c1t",
+                    "parentNode": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                    "links": [
+                      "c5797a5e-f84f-44e1-b6a5-4f89e74ee234"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7szsuc00gx3a6440f951mc",
+                    "type": "default",
+                    "x": 1424.59,
+                    "y": 136.5,
+                    "name": "ckn7szsuc00gy3a64pyg7jc2n",
+                    "parentNode": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                    "links": [
+                      "ee7493fe-fdcb-4ca4-8b3c-052cf93dc296"
+                    ],
+                    "in": false,
+                    "groupName": "Packing_List",
+                    "groupIndex": 0,
+                    "groupPath": "data.branches",
+                    "fieldLabel": null,
+                    "fieldPath": "nextNodes"
+                  },
+                  {
+                    "id": "ckn7szzhe00gz3a64ecmspt52",
+                    "type": "default",
+                    "x": 1424.59,
+                    "y": 161.5,
+                    "name": "ckn7szzhe00h03a64yau01g7p",
+                    "parentNode": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                    "links": [
+                      "ea150676-6e72-44db-8e23-318f555cac63"
+                    ],
+                    "in": false,
+                    "groupName": "Packages",
+                    "groupIndex": 1,
+                    "groupPath": "data.branches",
+                    "fieldLabel": null,
+                    "fieldPath": "nextNodes"
+                  },
+                  {
+                    "id": "cknj8y66i004w3b64kn2s3qeo",
+                    "type": "default",
+                    "x": 1424.59,
+                    "y": 186.5,
+                    "name": "cknj8y66i004x3b648i2mr5st",
+                    "parentNode": "0290d211-c36c-493f-a2d0-d7c9d39c4c72",
+                    "links": [
+                      "0b990d13-5417-4239-aa5b-6e0a7899eb67"
+                    ],
+                    "in": false,
+                    "groupName": "Shipper_Form_Get",
+                    "groupIndex": 2,
+                    "groupPath": "data.branches",
+                    "fieldLabel": null,
+                    "fieldPath": "nextNodes"
+                  }
+                ],
+                "data": {
+                  "branches": [
+                    {
+                      "name": "Packing_List",
+                      "nextNodes": [
+                        "85691694-9de0-4a92-aba2-b16bc99e0833"
+                      ]
+                    },
+                    {
+                      "name": "Packages",
+                      "nextNodes": [
+                        "9ee1f67c-9884-4e2d-836d-9f814e2cd636"
+                      ]
+                    },
+                    {
+                      "name": "Shipper",
+                      "nextNodes": [
+                        "20ca1317-d73b-4f98-8b79-dfc0aaa15ade"
+                      ]
+                    }
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Fork"
+              },
+              "ea2be139-a11f-43c1-85c2-6129ed17145e": {
+                "id": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+                "type": "query",
+                "selected": false,
+                "x": 860,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "ckn7t91nd00h13a64etrc89eb",
+                    "type": "default",
+                    "x": 852,
+                    "y": 136.5,
+                    "name": "ckn7t91nd00h23a642noxfrif",
+                    "parentNode": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+                    "links": [
+                      "2e70b731-ae2f-4554-8b4d-2df3b692a10a"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7t91ne00h33a64dz9i6s32",
+                    "type": "default",
+                    "x": 1012.78,
+                    "y": 136.5,
+                    "name": "ckn7t91ne00h43a64y81pye20",
+                    "parentNode": "ea2be139-a11f-43c1-85c2-6129ed17145e",
+                    "links": [
+                      "a57660ab-0140-4632-829c-b27c82e868b5"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "api": "application",
+                  "variablesTransform": "{\n  \"pcn\": $state.context.parameters.PCN\n}",
+                  "query": "query PlexConnection($pcn: JSON!) {\n  connection(where: { \n    \tconnectorId: { _in: [\n        \"464e9c3f-dd6c-47af-8078-cda1ff25e966\", \n        \"72974b11-897f-47bd-896d-133962ef7bbb\"\n      ] }\n    \t_or: [ \n        { options: { _eq: { path: \"PCN\", value: $pcn } } }, \n        { options: { _isNull: { path: \"PCN\", value: true } } } \n  \t  ]\n    \t_not: {\n        url: {\n          _contains: \"test\"\n        }\n      }\n  \t}) {\n    total\n    edges {\n      node {\n        id\n        name\n        connectorId\n      }\n    }\n  }\n}",
+                  "nextNodes": [
+                    "5722e468-8c14-4537-9bbc-f13565541496"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Get Plex Connections"
+              },
+              "5722e468-8c14-4537-9bbc-f13565541496": {
+                "id": "5722e468-8c14-4537-9bbc-f13565541496",
+                "type": "mergeContext",
+                "selected": false,
+                "x": 1050,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "ckn7uknfu00hl3a64iks5m7op",
+                    "type": "default",
+                    "x": 1042,
+                    "y": 136.5,
+                    "name": "ckn7uknfu00hm3a64yrszboem",
+                    "parentNode": "5722e468-8c14-4537-9bbc-f13565541496",
+                    "links": [
+                      "a57660ab-0140-4632-829c-b27c82e868b5"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7uknfu00hn3a64gpk2m97v",
+                    "type": "default",
+                    "x": 1196,
+                    "y": 136.5,
+                    "name": "ckn7uknfu00ho3a64kt19hc1f",
+                    "parentNode": "5722e468-8c14-4537-9bbc-f13565541496",
+                    "links": [
+                      "c5797a5e-f84f-44e1-b6a5-4f89e74ee234"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "transform": "(\n  total > 1\n    ? $throw(\"Multiple valid Plex connections found; ensure connections have PCN configured and PCN is passed from extension\");\n  \n  total = 0\n    ? $throw(\"No valid Plex connection found\");\n    \n  {\n    \"connection\": connection.edges[0].node\n      ~> | $ | {\n        \"classic\": connectorId = \"464e9c3f-dd6c-47af-8078-cda1ff25e966\"\n      } |\n  }\n)",
+                  "nextNodes": [
+                    "0290d211-c36c-493f-a2d0-d7c9d39c4c72"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Merge Connection"
+              },
+              "85691694-9de0-4a92-aba2-b16bc99e0833": {
+                "id": "85691694-9de0-4a92-aba2-b16bc99e0833",
+                "type": "transform",
+                "selected": false,
+                "x": 1520,
+                "y": 20,
+                "ports": [
+                  {
+                    "id": "ckn7unjwa00ie3a644a2253mj",
+                    "type": "default",
+                    "x": 1512,
+                    "y": 51.5,
+                    "name": "ckn7unjwa00if3a64zjvayn4j",
+                    "parentNode": "85691694-9de0-4a92-aba2-b16bc99e0833",
+                    "links": [
+                      "ee7493fe-fdcb-4ca4-8b3c-052cf93dc296"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7unjwa00ig3a64daiyb82h",
+                    "type": "default",
+                    "x": 1696.44,
+                    "y": 51.5,
+                    "name": "ckn7unjwa00ih3a64mqo41qsm",
+                    "parentNode": "85691694-9de0-4a92-aba2-b16bc99e0833",
+                    "links": [
+                      "26bbdbe8-5310-425c-9282-fa2778669534"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+                  ],
+                  "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 11586\n          : 14141,\n        \"datasourceName\": \"Shipper_Packing_List_Get\",\n        \"parameters\": {\n          \"Shipper_Key\": $state.context.parameters.Shipper_Key\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Shipper_Packing_List_Get"
+              },
+              "9ee1f67c-9884-4e2d-836d-9f814e2cd636": {
+                "id": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+                "type": "transform",
+                "selected": false,
+                "x": 1520,
+                "y": 90,
+                "ports": [
+                  {
+                    "id": "ckn7uqu9000j83a64r8s7fujw",
+                    "type": "default",
+                    "x": 1512,
+                    "y": 121.5,
+                    "name": "ckn7uqu9000j93a64xbv0scst",
+                    "parentNode": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+                    "links": [
+                      "ea150676-6e72-44db-8e23-318f555cac63"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7uqu9000ja3a64ve7w4uye",
+                    "type": "default",
+                    "x": 1747.66,
+                    "y": 121.5,
+                    "name": "ckn7uqu9000jb3a64u668moo9",
+                    "parentNode": "9ee1f67c-9884-4e2d-836d-9f814e2cd636",
+                    "links": [
+                      "a4bbdfb1-af92-466c-9d45-2e8547b0e502"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+                  ],
+                  "transform": "/* Datasource is not registered in UX! */\n$state.context.connection.classic\n  ? $integrate({\n      \"result\": {\n        \"connectionId\": $state.context.connection.id,\n        \"payload\": [\n          {\n            \"datasourceKey\": $state.context.connection.classic\n              ? 47190\n              : \"NOT REGISTERED\",\n            \"datasourceName\": \"sproc283025_Integrated_Shipping_Packages_Get\",\n            \"parameters\": {\n              \"Shipper_Key\": $state.context.parameters.Shipper_Key\n            }\n          }\n        ]\n      }\n    }).result.Rows\n  : []"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Integrated_Shipping_Packages_Get"
+              },
+              "a9ae977d-d5f9-4be0-bcac-504baa8ec78e": {
+                "id": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                "type": "combine",
+                "selected": false,
+                "x": 1805,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "ckn7uvytp00jd3a64p6vk1jjf",
+                    "type": "default",
+                    "x": 1797,
+                    "y": 136.5,
+                    "name": "ckn7uvytp00je3a64xu1k167f",
+                    "parentNode": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                    "links": [
+                      "a4bbdfb1-af92-466c-9d45-2e8547b0e502",
+                      "26bbdbe8-5310-425c-9282-fa2778669534",
+                      "03b388d3-99bf-4596-80b8-04551a22bd86"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7uvytp00jf3a64j6ea9i1w",
+                    "type": "default",
+                    "x": 1951,
+                    "y": 136.5,
+                    "name": "ckn7uvytp00jg3a64y8z5yooo",
+                    "parentNode": "a9ae977d-d5f9-4be0-bcac-504baa8ec78e",
+                    "links": [
+                      "072eedef-be08-4977-8f7e-54659564903c"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "executionTimeout": 10,
+                  "payloadCombinationStrategy": "index",
+                  "contextCombinationStrategy": "first",
+                  "nextNodes": [
+                    "9d9b7e17-2eb6-498f-aa83-68b66285e5cc"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Combine"
+              },
+              "201c3a7c-900d-4571-a36d-e87565d3165c": {
+                "id": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                "type": "switch",
+                "selected": false,
+                "x": 1305,
+                "y": 295,
+                "ports": [
+                  {
+                    "id": "ckn7uyr1y00jh3a64ithdrowr",
+                    "type": "default",
+                    "x": 1297,
+                    "y": 326.5,
+                    "name": "ckn7uyr1y00ji3a64uibd66r3",
+                    "parentNode": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                    "links": [
+                      "d7bc86a3-2b06-4434-8a1d-ef9d0bee21f2"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7uyyp300jj3a64r16y9sc4",
+                    "type": "default",
+                    "x": 1451,
+                    "y": 351.5,
+                    "name": "ckn7uyyp300jk3a645hhkm29n",
+                    "parentNode": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                    "links": [
+                      "051c7ab6-abf3-4fff-ad5a-b0aa96bb67eb"
+                    ],
+                    "in": false,
+                    "groupName": "No Rule",
+                    "groupIndex": 1,
+                    "groupPath": "data.branches",
+                    "fieldLabel": null,
+                    "fieldPath": "nextNodes"
+                  },
+                  {
+                    "id": "ckn7uzigu00jl3a64d3tmedra",
+                    "type": "default",
+                    "x": 1451,
+                    "y": 326.5,
+                    "name": "ckn7uzigu00jm3a64x02tj4be",
+                    "parentNode": "201c3a7c-900d-4571-a36d-e87565d3165c",
+                    "links": [
+                      "73f633a1-2c56-4b2d-b57f-e49041ea0d56"
+                    ],
+                    "in": false,
+                    "groupIndex": 0,
+                    "groupPath": "data.branches",
+                    "fieldLabel": null,
+                    "fieldPath": "nextNodes"
+                  }
+                ],
+                "data": {
+                  "branches": [
+                    {
+                      "nextNodes": [
+                        "e4912db8-e667-40eb-ad53-a31e55cf525b"
+                      ],
+                      "name": "Example Default",
+                      "transform": "Ship_To.Name = \"Big Company\""
+                    },
+                    {
+                      "name": "Global Default",
+                      "nextNodes": [
+                        "95f15814-7cc7-44a2-9878-82b00e5a8abf"
+                      ],
+                      "transform": "true"
+                    }
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Default Rules"
+              },
+              "e4912db8-e667-40eb-ad53-a31e55cf525b": {
+                "id": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+                "type": "transform",
+                "selected": false,
+                "x": 1500,
+                "y": 265,
+                "ports": [
+                  {
+                    "id": "ckn7vg4so00jn3a64eozr6rsx",
+                    "type": "default",
+                    "x": 1492,
+                    "y": 296.5,
+                    "name": "ckn7vg4so00jo3a645cvw3s3n",
+                    "parentNode": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+                    "links": [
+                      "73f633a1-2c56-4b2d-b57f-e49041ea0d56"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7vg4so00jp3a64eeowmin1",
+                    "type": "default",
+                    "x": 1646,
+                    "y": 296.5,
+                    "name": "ckn7vg4so00jq3a64280j2sou",
+                    "parentNode": "e4912db8-e667-40eb-ad53-a31e55cf525b",
+                    "links": [
+                      "5b56d913-6e4b-47ce-8942-3239aa065808"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "34af4e31-cc19-4e8e-bbbe-cb23a6760642"
+                  ],
+                  "transform": "{\n  \"integratedCarrierId\": \"ckmwk8fv600010i4sgvetax0g\", /* UPS */\n  \"integratedCarrierServiceId\": \"ckmxv51ra000s0j7j2o052mzz\", /* Ground */\n  \"integratedCarrierBillToAccountId\": \"ckmxu72l7003b0i7171sm2uz6\", /* Cumulus UPS */\n  \"integratedCarrierConnectionConfigurationId\": \"ckmxyiwta000q0i2zba479uqe\" /* Cumulus UPS */\n}"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Example Default"
+              },
+              "95f15814-7cc7-44a2-9878-82b00e5a8abf": {
+                "id": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+                "type": "transform",
+                "selected": false,
+                "x": 1500,
+                "y": 360,
+                "ports": [
+                  {
+                    "id": "ckn7vgygq00483a64amhtqulp",
+                    "type": "default",
+                    "x": 1492,
+                    "y": 391.5,
+                    "name": "ckn7vgygq00493a645pd6oajr",
+                    "parentNode": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+                    "links": [
+                      "051c7ab6-abf3-4fff-ad5a-b0aa96bb67eb"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7vgygq004a3a64mbm3byxn",
+                    "type": "default",
+                    "x": 1646,
+                    "y": 391.5,
+                    "name": "ckn7vgygq004b3a64cg59zhxk",
+                    "parentNode": "95f15814-7cc7-44a2-9878-82b00e5a8abf",
+                    "links": [
+                      "d20035ce-aa09-4e40-9404-83c454be052a"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "34af4e31-cc19-4e8e-bbbe-cb23a6760642"
+                  ],
+                  "transform": "{}"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Global Default"
+              },
+              "9d9b7e17-2eb6-498f-aa83-68b66285e5cc": {
+                "id": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+                "type": "mergeContext",
+                "selected": false,
+                "x": 2005,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "ckn7vij9j004s3a64nftl5unj",
+                    "type": "default",
+                    "x": 1997,
+                    "y": 136.5,
+                    "name": "ckn7vij9j004t3a644woll2ai",
+                    "parentNode": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+                    "links": [
+                      "072eedef-be08-4977-8f7e-54659564903c"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "ckn7vij9j004u3a64ixrapw6c",
+                    "type": "default",
+                    "x": 2151,
+                    "y": 136.5,
+                    "name": "ckn7vij9j004v3a64jp6d6o1q",
+                    "parentNode": "9d9b7e17-2eb6-498f-aa83-68b66285e5cc",
+                    "links": [
+                      "9f6a4078-ade6-4f0a-8826-da6ce397b985"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "transform": "{\n  \"shipperData\": $\n}",
+                  "nextNodes": [
+                    "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Merge Context"
+              },
+              "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a": {
+                "id": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+                "type": "transform",
+                "selected": false,
+                "x": 2210,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "cknj8umok02593b644cjfwdz8",
+                    "type": "default",
+                    "x": 2202,
+                    "y": 136.5,
+                    "name": "cknj8umok025a3b64sg886103",
+                    "parentNode": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+                    "links": [
+                      "9f6a4078-ade6-4f0a-8826-da6ce397b985"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "cknj8umok025b3b642riscblu",
+                    "type": "default",
+                    "x": 2356,
+                    "y": 136.5,
+                    "name": "cknj8umok025c3b64qlfjpwyo",
+                    "parentNode": "0fa7bedb-df7b-4ec2-8422-bf3996c15d5a",
+                    "links": [
+                      "3e927289-1d95-4216-9070-5678d3fecbb5"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945"
+                  ],
+                  "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 26104\n          : 28,\n        \"datasourceName\": \"Address_Get\",\n        \"parameters\": {\n          \"Customer_No\": $state.context.shipperData.Shipper.Customer_No,\n          \"Customer_Address_No\": $state.context.shipperData.Shipper.Customer_Address_No\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Address_Get"
+              },
+              "20ca1317-d73b-4f98-8b79-dfc0aaa15ade": {
+                "id": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+                "type": "transform",
+                "selected": false,
+                "x": 1520,
+                "y": 155,
+                "ports": [
+                  {
+                    "id": "cknj8wf39025l3b6431g67rjo",
+                    "type": "default",
+                    "x": 1512,
+                    "y": 186.5,
+                    "name": "cknj8wf39025m3b644s8fskbg",
+                    "parentNode": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+                    "links": [
+                      "0b990d13-5417-4239-aa5b-6e0a7899eb67"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "cknj8wf39025n3b647lq6pwyv",
+                    "type": "default",
+                    "x": 1666,
+                    "y": 186.5,
+                    "name": "cknj8wf39025o3b647h26bxrq",
+                    "parentNode": "20ca1317-d73b-4f98-8b79-dfc0aaa15ade",
+                    "links": [
+                      "03b388d3-99bf-4596-80b8-04551a22bd86"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "nextNodes": [
+                    "a9ae977d-d5f9-4be0-bcac-504baa8ec78e"
+                  ],
+                  "transform": "$integrate({\n  \"result\": {\n    \"connectionId\": $state.context.connection.id,\n    \"payload\": [\n      {\n        \"datasourceKey\": $state.context.connection.classic\n          ? 1092\n          : 2068,\n        \"datasourceName\": \"Shipper_Form_Get\",\n        \"parameters\": {\n          \"Shipper_Key\": $state.context.parameters.Shipper_Key\n        }\n      }\n    ]\n  }\n}).result.Rows[0]"
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Shipper_Form_Get"
+              },
+              "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945": {
+                "id": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+                "type": "mergeContext",
+                "selected": false,
+                "x": 2410,
+                "y": 105,
+                "ports": [
+                  {
+                    "id": "cknj8z73q00563b64u6l0my44",
+                    "type": "default",
+                    "x": 2402,
+                    "y": 136.5,
+                    "name": "cknj8z73q00573b64w9djo189",
+                    "parentNode": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+                    "links": [
+                      "3e927289-1d95-4216-9070-5678d3fecbb5"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "cknj8z73r00583b642xmczn98",
+                    "type": "default",
+                    "x": 2556,
+                    "y": 136.5,
+                    "name": "cknj8z73r00593b64mfrkoqwp",
+                    "parentNode": "6976cfc0-ca6b-46d9-a5b9-aad4dcb74945",
+                    "links": [
+                      "2d390bca-9700-4f06-9b7f-cb6649e869d6"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "transform": "{\n  \"shipperData\": {\n    \"Ship_To\": $\n  }\n}",
+                  "nextNodes": [
+                    "730480dd-b7b1-42ed-997f-d4fbfd7a55ae"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Merge Context"
+              },
+              "730480dd-b7b1-42ed-997f-d4fbfd7a55ae": {
+                "id": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+                "type": "transform",
+                "selected": false,
+                "x": 1120,
+                "y": 295,
+                "ports": [
+                  {
+                    "id": "cknj9ac9500743b64chnusyo0",
+                    "type": "default",
+                    "x": 1112,
+                    "y": 326.5,
+                    "name": "cknj9ac9500753b64wfjxicg3",
+                    "parentNode": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+                    "links": [
+                      "2d390bca-9700-4f06-9b7f-cb6649e869d6"
+                    ],
+                    "in": true
+                  },
+                  {
+                    "id": "cknj9ac9600763b64ex1zqml8",
+                    "type": "default",
+                    "x": 1266,
+                    "y": 326.5,
+                    "name": "cknj9ac9600773b64rnbiarjq",
+                    "parentNode": "730480dd-b7b1-42ed-997f-d4fbfd7a55ae",
+                    "links": [
+                      "d7bc86a3-2b06-4434-8a1d-ef9d0bee21f2"
+                    ],
+                    "in": false,
+                    "groupIndex": null,
+                    "groupPath": null,
+                    "fieldLabel": "Output",
+                    "fieldPath": "data.nextNodes"
+                  }
+                ],
+                "data": {
+                  "transform": "$state.context.shipperData",
+                  "nextNodes": [
+                    "201c3a7c-900d-4571-a36d-e87565d3165c"
+                  ]
+                },
+                "debug": {
+                  "breakpointEnabled": false
+                },
+                "name": "Transform"
+              }
+            }
+          }
+        ],
+        "name": "Load Plex Integrated Shipper",
+        "type": "Integration",
+        "version": "0.0.5",
+        "walkthrough": {}
+      }
+    }
+  ],
+  "description": "Create Latest Load Plex Integrated Shipper Version (2/6)"
+}
