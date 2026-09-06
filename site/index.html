@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrated Carrier Addon Plex Package &mdash; Fuuz Accelerator</title>
+<meta name="description" content="Fuuz accelerator: Plex ERP add-on for integrated carrier shipping â€” browser extension overlay">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://accelerators.fuuz.com/package-integrated-carrier-addon-plex-accelerator/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://accelerators.fuuz.com/package-integrated-carrier-addon-plex-accelerator/">
+<meta property="og:site_name" content="Fuuz Accelerators">
+<meta property="og:title" content="Integrated Carrier Addon Plex Package &mdash; Fuuz Accelerator">
+<meta property="og:description" content="Fuuz accelerator: Plex ERP add-on for integrated carrier shipping â€” browser extension overlay">
+<link rel="icon" href="assets/appicon-violet.svg">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="prose.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Integrated Carrier Addon Plex Package",
+  "url": "https://accelerators.fuuz.com/package-integrated-carrier-addon-plex-accelerator/",
+  "description": "Fuuz accelerator: Plex ERP add-on for integrated carrier shipping \u00e2\u20ac\u201d browser extension overlay",
+  "codeRepository": "https://github.com/Fuuz-Platform/package-integrated-carrier-addon-plex-accelerator",
+  "applicationCategory": "BusinessApplication",
+  "runtimePlatform": "Fuuz",
+  "author": {
+    "@type": "Organization",
+    "name": "Fuuz",
+    "url": "https://fuuz.com"
+  }
+}
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="logo" href="../"><img src="assets/logo-horizontal-on-midnight.svg" alt="Fuuz"></a>
+    <span class="section">Accelerators</span>
+    <nav><a href="#overview">Overview</a><a href="#package-contents">Package Contents</a><a href="#installed-components">Installed Components</a><a href="https://github.com/Fuuz-Platform/package-integrated-carrier-addon-plex-accelerator">GitHub</a></nav>
+  </div>
+</header>
+<main>
+<div class="wrap hero">
+  <p class="eyebrow">Accelerator &middot; Integration package</p>
+  <h1>Integrated Carrier Addon Plex <span class="accent">Package</span></h1>
+  <p class="lede">Fuuz accelerator: Plex ERP add-on for integrated carrier shipping â€” browser extension overlay</p>
+  <div class="ctas">
+    <a class="cta cta-primary" href="https://github.com/Fuuz-Platform/package-integrated-carrier-addon-plex-accelerator">Get the package</a>
+    <a class="cta cta-secondary" href="../">All accelerators</a>
+  </div>
+</div>
+<section>
+  <div class="wrap prose">
+<p><strong>Version:</strong> 0.0.1
+<strong>Spec Version:</strong> 2.0.0</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>This package extends the Integrated Carrier suite with Plex ERP-specific integration features. It installs the <code>Load Plex Integrated Shipper</code> flow (which populates carrier account and shipper data from Plex into Fuuz), an <code>Integrated Carrier Shipment (Extension)</code> screen that adds Plex-specific fields and actions to the base shipment workflow, and an <code>ExternalApplicationConfiguration</code> record that enables the Fuuz Browser Extension to interact with the shipping screen from within the Plex ERP web interface.</p>
+<p>This addon is optional — install it only in environments where Plex ERP is the primary business system and operators initiate shipments from within Plex.</p>
+<hr />
+<h2 id="package-contents">Package Contents</h2>
+<pre><code>integrated-carrier-addon-plex/
+├── manifest.json
+├── package-data.json
+├── install/                     6 install steps
+├── preinstall/                  4 preinstall verification steps
+└── postinstall/                 1 postinstall step
+</code></pre>
+<hr />
+<h2 id="installed-components">Installed Components</h2>
+<h3>Load Plex Integrated Shipper (<code>Integration</code> flow)</h3>
+<p>Syncs Plex shipper (vendor/customer) configuration into Fuuz <code>IntegratedCarrierAccount</code> records:
+- Queries Plex for configured shipping accounts and carrier credentials
+- Maps Plex carrier account data to Fuuz <code>IntegratedCarrierAccount</code> fields
+- Creates or updates carrier account records with Plex-sourced credentials
+- Enables Plex-managed carrier accounts to be used in Fuuz shipment flows without manual re-entry</p>
+<h3>Integrated Carrier Shipment (Extension) Screen</h3>
+<p>An extended version of the base Integrated Carrier Shipment screen with Plex-specific additions:
+- <strong>Plex Container / Shipment context</strong> — Auto-populates shipment fields from Plex Container or Sales Order context when opened from Plex via the browser extension
+- <strong>Plex-linked recipient</strong> — Auto-fills ship-to address from Plex Customer record
+- <strong>Post-label callback</strong> — After label generation, posts the tracking number and carrier details back to the Plex Sales Order or Container record via Plex API
+- <strong>Plex shipment reference</strong> — Captures Plex shipment/container ID in <code>IntegratedCarrierRequest.externalId</code> for cross-system reconciliation</p>
+<h3>ExternalApplicationConfiguration: <code>mfgxBrowserExtensionIntegratedCarrierShipping</code></h3>
+<p>Configures the Fuuz Browser Extension to recognize Plex ERP shipment pages and inject the <code>Integrated Carrier Shipment (Extension)</code> screen as an overlay. Enables operators to generate carrier labels without leaving Plex.</p>
+<hr />
+<h2 id="install-process">Install Process</h2>
+<p><strong>Preinstall (4 steps):</strong> Verifies that the <code>Load Plex Integrated Shipper</code> flow, the extension screen (by ID and version ID), and the <code>ExternalApplicationConfiguration</code> record don't already exist before installing.</p>
+<p><strong>Install (6 steps):</strong> Creates flow header + version, creates screen header + version, creates <code>ExternalApplicationConfiguration</code> record, deploys all.</p>
+<p><strong>Postinstall (1 step):</strong> Registers the extension configuration with the Fuuz platform to activate browser extension recognition.</p>
+<hr />
+<h2 id="installation">Installation</h2>
+<ol>
+<li>Install the full Integrated Carrier core suite: <code>package-integrated-carrier-core-schema-accelerator</code>, <code>package-integrated-carrier-core-flows-accelerator</code>, <code>package-integrated-carrier-core-screens-accelerator</code></li>
+<li>Install at least one carrier package (<code>package-integrated-carrier-fedex-accelerator</code> or <code>package-integrated-carrier-ups-accelerator</code>)</li>
+<li>Import this package via Fuuz Package Manager</li>
+<li>Ensure the Fuuz Browser Extension is installed in the Plex-facing browsers</li>
+<li>Run <code>Load Plex Integrated Shipper</code> to sync carrier accounts from Plex</li>
+<li>Test by opening a Plex Sales Order and verifying the shipping extension overlay appears</li>
+</ol>
+<hr />
+<h2 id="dependencies">Dependencies</h2>
+<ul>
+<li><strong><code>package-integrated-carrier-core-schema-accelerator</code></strong> — required</li>
+<li><strong><code>package-integrated-carrier-core-flows-accelerator</code></strong> — required</li>
+<li><strong><code>package-integrated-carrier-core-screens-accelerator</code></strong> — required</li>
+<li><strong><code>package-integrated-carrier-fedex-accelerator</code></strong> and/or <strong><code>package-integrated-carrier-ups-accelerator</code></strong> — at least one carrier required</li>
+<li><strong>Plex ERP</strong> with API access enabled (for shipper sync and tracking number writeback)</li>
+<li><strong>Fuuz Browser Extension</strong> installed in operator browsers for the screen overlay feature</li>
+</ul>
+<hr />
+<h2 id="part-of-the-integrated-carrier-suite">Part of the Integrated Carrier Suite</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>integrated-carrier-core-schema</code></td>
+<td>Data models</td>
+</tr>
+<tr>
+<td><code>integrated-carrier-core-flows</code></td>
+<td>Router and print flows</td>
+</tr>
+<tr>
+<td><code>integrated-carrier-core-screens</code></td>
+<td>Shipment management screens</td>
+</tr>
+<tr>
+<td><code>integrated-carrier-fedex</code></td>
+<td>FedEx seed data and label flows</td>
+</tr>
+<tr>
+<td><code>integrated-carrier-ups</code></td>
+<td>UPS seed data and label flows</td>
+</tr>
+<tr>
+<td><strong>integrated-carrier-addon-plex</strong> (this)</td>
+<td>Plex ERP integration extension</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><em>Built on the <a href="https://fuuz.com">Fuuz Industrial Operations Platform</a></em></p>
+  </div>
+</section>
+</main>
+<footer>
+  <div class="wrap">
+    <p>Fuuz&reg; is an Enterprise Industrial Intelligence Platform.
+      <a href="https://accelerators.fuuz.com/">All accelerators</a> &middot;
+      <a href="https://github.com/Fuuz-Platform/package-integrated-carrier-addon-plex-accelerator">Source</a> &middot;
+      <a href="https://fuuz.com">fuuz.com</a></p>
+  </div>
+</footer>
+</body>
+</html>
